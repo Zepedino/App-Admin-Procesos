@@ -30,25 +30,24 @@ dependencies = [
 dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "respx>=0.21", "ruff>=0.7"]
 
 [project.scripts]
-sgl = "sgl.cli:main"
+sgl = "backend.consola:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+include = ["backend*"]
 
-[tool.setuptools.package-data]
-sgl = ["web/templates/**/*.html", "web/static/**/*"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]
+pythonpath = ["."]
+testpaths = ["pruebas"]
 
 [tool.ruff]
 line-length = 100
-src = ["src"]
+src = ["."]
 
 [tool.ruff.lint]
 # Las exclusiones se justifican una por una: una regla apagada sin motivo
@@ -74,5 +73,5 @@ ignore = [
 # `parsear_fecha_mp` y `_parsear_dia` construyen fechas sin hora a proposito:
 # el parametro `fecha` de la API es ddmmaaaa, sin zona. La conversion a UTC la
 # hace `parsear_fecha_hora_api`, que si aplica la zona de Chile.
-"src/sgl/core/tiempo.py" = ["DTZ007"]
-"src/sgl/cli.py" = ["DTZ007"]
+"backend/nucleo/tiempo.py" = ["DTZ007"]
+"backend/consola.py" = ["DTZ007"]

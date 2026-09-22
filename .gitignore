@@ -5,9 +5,8 @@
 *.pem
 *.key
 
-# Datos y archivos descargados
-var/
-!var/.gitkeep
+# Datos: base de datos y archivos descargados. Se recrean solos.
+datos/
 *.sqlite3
 *.db
 
@@ -23,12 +22,11 @@ venv/
 dist/
 build/
 
-# Node / Tailwind
-node_modules/
-src/sgl/web/static/css/app.build.css
-
 # Editores / SO
-.vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# NOTA: .vscode/ SI se versiona. Lleva la configuracion del boton Run y del
+# interprete, que es justo lo que evita que alguien tenga que pelear con la
+# terminal para levantar la aplicacion.

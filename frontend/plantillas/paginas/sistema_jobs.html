@@ -1,0 +1,44 @@
+{% extends "base/base.html" %}
+{% block subtitulo %}
+  <p class="suave">
+    PRD §6 · un job que falla reintenta y avisa; jamás falla en silencio.
+    Las cargas masivas solo corren entre {{ ventana_batch }} (hora de Chile).
+  </p>
+{% endblock %}
+{% block contenido %}
+  <div class="tarjeta">
+    {% if not planificador_activo %}
+      <div class="aviso atencion"><span class="icono">!</span>
+        <div>El planificador no está corriendo en este proceso. Los jobs se pueden
+          ejecutar a mano con <code>python -m backend.consola run-job &lt;id&gt;</code>.</div></div>
+    {% endif %}
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th>Job</th><th>Descripción</th><th>Frecuencia</th>
+          <th>Próxima</th><th>Última ejecución</th></tr></thead>
+        <tbody>
+          {% for j in jobs %}
+            <tr>
+              <td class="mono pequeno">{{ j.id }}</td>
+              <td>{{ j.descripcion }}</td>
+              <td class="pequeno tenue">{{ j.trigger }}</td>
+              <td class="pequeno">{{ j.proxima_ejecucion|fecha_hora if j.proxima_ejecucion else '—' }}</td>
+              <td class="pequeno">
+                {% if j.ultima %}
+                  {% if j.ultima.ok %}<span class="etiqueta ok">ok</span>
+                  {% elif j.ultima.ok is none %}<span class="etiqueta info">en curso</span>
+                  {% else %}<span class="etiqueta critico" title="{{ j.ultima.error }}">falló</span>{% endif %}
+                  <div class="tenue">{{ j.ultima.inicio|fecha_hora }}
+                    {% if j.ultima.duracion_seg %}· {{ "%.1f"|format(j.ultima.duracion_seg) }} s{% endif %}</div>
+                  {% if j.ultima.error %}<div class="pequeno" style="color:var(--critico)">{{ j.ultima.error }}</div>{% endif %}
+                {% else %}<span class="tenue">nunca</span>{% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="vacio">No hay jobs registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

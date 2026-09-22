@@ -1,0 +1,43 @@
+{% extends "base/base.html" %}
+{% block subtitulo %}
+  <p class="suave">
+    Hallazgo 8 · excluir un organismo exige motivo escrito, y queda en la auditoría.
+  </p>
+{% endblock %}
+{% block contenido %}
+  <div class="tarjeta">
+    {% if organismos %}
+      <div class="tabla-envoltura">
+        <table>
+          <thead><tr><th>Código</th><th>Organismo</th><th>Región</th>
+            <th>Lista negra</th><th>Motivo</th><th></th></tr></thead>
+          <tbody>
+            {% for o in organismos %}
+              <tr>
+                <td class="mono ajustado">{{ o.codigo_mp }}</td>
+                <td>{{ o.nombre|truncate(60) }}</td>
+                <td class="pequeno">{{ o.region|default('—', true) }}</td>
+                <td>
+                  {% if o.lista_negra %}<span class="etiqueta critico">Excluido</span>
+                  {% else %}<span class="etiqueta ok">Habilitado</span>{% endif %}
+                </td>
+                <td class="pequeno tenue">{{ o.motivo_lista_negra|default('—', true)|truncate(50) }}</td>
+                <td class="ajustado">
+                  <form method="post" action="/radar/organismos/{{ o.id }}/lista-negra" class="horizontal">
+                    <input type="text" name="motivo" placeholder="Motivo" style="width:170px"
+                           value="{{ o.motivo_lista_negra or '' }}" {{ 'required' if not o.lista_negra }}>
+                    <button class="boton pequeno {{ 'peligro' if not o.lista_negra }}" type="submit">
+                      {{ 'Rehabilitar' if o.lista_negra else 'Excluir' }}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="vacio">Aún no hay organismos: se crean solos al sincronizar licitaciones.</div>
+    {% endif %}
+  </div>
+{% endblock %}

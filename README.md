@@ -4,44 +4,96 @@ Consultora ITO / SERVIU. Todo el ciclo de vida de una licitación en una sola
 aplicación: desde que aparece en el radar de Mercado Público hasta que el
 contrato se cierra con su rentabilidad real calculada.
 
-Especificación funcional: [`docs/PRD-v1-sistema-licitaciones.md`](docs/PRD-v1-sistema-licitaciones.md)
-Restricciones no negociables: [`CLAUDE.md`](CLAUDE.md)
-Qué está construido de verdad: [`docs/ESTADO.md`](docs/ESTADO.md)
+---
+
+## Cómo abrir la aplicación
+
+**Windows:** doble clic en **`Iniciar aplicacion.bat`**
+
+**macOS o Linux:** doble clic en `iniciar.sh`, o en una terminal `./iniciar.sh`
+
+**Desde VS Code o PyCharm:** abrir `iniciar.py` y pulsar el botón Run.
+
+No hace falta escribir nada. El lanzador se encarga solo de:
+
+1. Verificar que haya Python 3.11 o superior.
+2. Crear el entorno aislado (`.venv`) e instalar las dependencias.
+3. Crear el archivo de configuración `.env`.
+4. Crear la base de datos con sus datos iniciales.
+5. Publicar los procedimientos escritos dentro de la app.
+6. Abrir el navegador cuando el servidor ya está respondiendo.
+
+**La primera vez tarda uno o dos minutos** porque descarga las librerías. Las
+siguientes, segundos. Para detenerla: `Ctrl+C` o cerrar la ventana.
+
+> Si algo falla, el lanzador dice **qué hacer**, no solo qué se rompió.
+> Para ver el detalle técnico: `python iniciar.py --detalle`
+
+Sin el ticket de Mercado Público el sistema funciona igual: usa respuestas
+**reales** de la API guardadas en `pruebas/fixtures/api/`, y lo advierte en cada
+pantalla. No hay datos inventados en ninguna parte.
 
 ---
 
-## Arrancar en local
+## Qué hay dentro
 
-```bash
-python -m venv .venv
-.venv/Scripts/activate          # Windows;  en Linux/macOS: source .venv/bin/activate
-pip install -e ".[dev]"
-cp .env.example .env
-python -m sgl.cli init-db --con-semilla
-python -m sgl.cli serve --reload
+```
+iniciar.py              ← ejecutar esto abre la aplicación
+Iniciar aplicacion.bat  ← atajo de Windows (doble clic)
+
+backend/                TODO LO QUE HACE
+  app.py                  arma la aplicación
+  consola.py              comandos de operación y diagnóstico
+  plantillas.py           motor de plantillas y formato de fechas y montos
+  nucleo/                 configuración, base de datos, auditoría, eventos, permisos
+  conectores/             conexiones al mundo exterior, reemplazables
+    mercado_publico/        API de ChileCompra
+    ia/                     inteligencia artificial
+    archivos/               guardado de documentos con control de versiones
+    avisos/                 correo, WhatsApp, consola
+  modulos/                un paquete por módulo del PRD (m0_procesos … m11_documental)
+
+frontend/               TODO LO QUE SE VE
+  plantillas/             páginas HTML
+  estaticos/              estilos
+
+pruebas/                tests automáticos (79)
+documentos/             PRD, estado real, arquitectura y decisiones
+datos/                  base de datos y archivos descargados (no se versiona)
 ```
 
-Abre <http://localhost:8000>.
-
-Sin `MP_TICKET` el sistema funciona igual: usa respuestas **reales** de la API
-guardadas en `tests/fixtures/api/`, y lo advierte en cada pantalla. No hay datos
-inventados en ninguna parte.
+Cada módulo trae su propio `PROCESO.md`: el procedimiento operativo escrito que
+exige RF-0.1, junto al código y no en una carpeta que nadie abre. La app los
+publica en `/procesos/`.
 
 ---
 
-## Comandos
+## Documentación
+
+| Documento | Para qué |
+|---|---|
+| [`documentos/PRD-v1-sistema-licitaciones.md`](documentos/PRD-v1-sistema-licitaciones.md) | Qué debe hacer el sistema |
+| [`documentos/ESTADO.md`](documentos/ESTADO.md) | Qué está construido **de verdad** |
+| [`documentos/arquitectura.md`](documentos/arquitectura.md) | Cómo está armado y por qué |
+| [`documentos/decisiones/`](documentos/decisiones/) | Decisiones tomadas, con su motivo |
+| [`documentos/despliegue.md`](documentos/despliegue.md) | Publicarlo en internet |
+| [`CLAUDE.md`](CLAUDE.md) | Restricciones no negociables |
+
+---
+
+## Comandos de operación
+
+Solo si necesitas operar o diagnosticar. Para usar la app, basta el lanzador.
 
 ```bash
-python -m sgl.cli doctor                 # entorno, conectividad, cuota, módulos
-python -m sgl.cli init-db --con-semilla  # crea tablas + perfil y ciclo de vida iniciales
-python -m sgl.cli sync-dia 2026-09-04    # sincroniza un día (acepta también 04092026)
-python -m sgl.cli sync-dia --limite 20   # ayer, con tope de llamadas de detalle
-python -m sgl.cli traer 1509-5-L126      # trae una licitación por código (RF-5.1)
-python -m sgl.cli capturar-fixture 1509-5-L126   # guarda una respuesta real como fixture
-python -m sgl.cli run-job                # lista los jobs
-python -m sgl.cli run-job m1_radar.pull_liviano  # ejecuta uno a mano
-python -m sgl.cli estado                 # resumen del contenido
-pytest                                   # 77 tests, incluidos los de arquitectura
+python -m backend.consola doctor                   # entorno, conectividad, cuota
+python -m backend.consola sync-dia 2026-09-04      # sincroniza un día concreto
+python -m backend.consola traer 1509-5-L126        # trae una licitación por código
+python -m backend.consola capturar-fixture 1509-5-L126
+python -m backend.consola run-job                  # lista las tareas programadas
+python -m backend.consola importar-procedimientos  # publica los PROCESO.md
+python -m backend.consola estado                   # resumen del contenido
+pytest                                             # los 79 tests
 ```
 
 `doctor` es lo primero que hay que correr cuando algo no funciona: la mayoría de
@@ -49,44 +101,18 @@ los problemas de este tipo de sistema son de configuración, no de lógica.
 
 ---
 
-## Estructura
-
-```
-src/sgl/
-  core/        núcleo: config, BD, auditoría, eventos, RBAC, planificador, registro
-  providers/   adaptadores externos, intercambiables por contrato
-     procurement/   API de Mercado Público (+ proveedor de fixtures)
-     llm/           IA, con las reglas duras del PRD §4.4 implementadas
-     storage/       archivos versionados por hash SHA-256
-     notify/        correo, WhatsApp, consola
-  modules/     un paquete por módulo del PRD (m0_procesos … m11_documental)
-  web/         plantillas Jinja + CSS propio, sin build
-tests/
-  fixtures/api/    respuestas REALES de la API, capturadas y versionadas
-docs/
-  PRD-…            especificación funcional
-  ESTADO.md        qué está construido, qué es esqueleto, qué no existe
-  arquitectura.md  cómo está armado y por qué
-  decisiones/      ADR numerados
-```
-
-Cada módulo trae su propio `PROCESO.md`: el procedimiento operativo escrito que
-exige RF-0.1, junto al código y no en una carpeta que nadie abre.
-
----
-
 ## Cómo agregar un módulo
 
-1. Crear `src/sgl/modules/mN_nombre/` con la anatomía descrita en
+1. Crear `backend/modulos/mN_nombre/` con la anatomía descrita en
    [`CLAUDE.md`](CLAUDE.md) §5.
 2. Exponer un `MODULO: Modulo` en su `__init__.py`.
-3. Añadirlo a `_MANIFIESTOS` en `src/sgl/modules/__init__.py`.
+3. Añadirlo a `_MANIFIESTOS` en `backend/modulos/__init__.py`.
 
-No hay paso 4. **Si tuviste que tocar `core/` o `main.py` para agregar
-funcionalidad, el diseño falló** — y hay tests de arquitectura que lo detectan.
+No hay paso 4. **Si tuviste que tocar `nucleo/` o `app.py`, el diseño falló** — y
+hay tests de arquitectura que lo detectan.
 
 Los módulos no se importan entre sí: se comunican por el bus de eventos
-(`core/eventos.py`). Ver [`docs/arquitectura.md`](docs/arquitectura.md) §2.
+(`backend/nucleo/eventos.py`). Ver [`documentos/arquitectura.md`](documentos/arquitectura.md) §2.
 
 ---
 
@@ -108,17 +134,10 @@ No son documentación; están implementadas y testeadas.
 
 ---
 
-## Despliegue
-
-Ver [`docs/despliegue.md`](docs/despliegue.md). Resumen: Render (web service) +
-Supabase (Postgres). Un solo servicio sirve API y páginas.
-
----
-
 ## Estado
 
 Fase 1 en construcción. M0 y M1 operativos y verificados contra la API real;
 M2–M11 declarados en el registro con su estado real, visible en `/sistema/modulos`.
 
-Lo que bloquea el avance está listado en la portada de la aplicación y en
-[`docs/ESTADO.md`](docs/ESTADO.md).
+Lo que bloquea el avance está en la portada de la aplicación y en
+[`documentos/ESTADO.md`](documentos/ESTADO.md).

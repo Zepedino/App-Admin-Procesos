@@ -11,8 +11,8 @@ services:
     # proceso web. Con dos workers, cada job se ejecutaria dos veces y se
     # gastaria el doble de cuota de la API.
     startCommand: >
-      python -m sgl.cli init-db &&
-      uvicorn sgl.main:app --host 0.0.0.0 --port $PORT --workers 1
+      python -m backend.consola init-db &&
+      uvicorn backend.app:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /salud
     envVars:
       - key: PYTHON_VERSION

@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+{% block contenido %}
+  {% if procedimiento %}
+    <div class="tarjeta">
+      <div class="datos">
+        <div class="dato"><div class="clave">Código</div><div class="valor mono">{{ procedimiento.codigo }}</div></div>
+        <div class="dato"><div class="clave">Versión</div><div class="valor">v{{ procedimiento.version }}</div></div>
+        <div class="dato"><div class="clave">Responsable</div><div class="valor">{{ procedimiento.responsable|default('—', true) }}</div></div>
+        <div class="dato"><div class="clave">Última revisión</div>
+          <div class="valor">{{ procedimiento.ultima_revision|fecha_corta }}
+            {% if procedimiento.revision_vencida %}<span class="etiqueta atencion">vencida</span>{% endif %}</div></div>
+        <div class="dato"><div class="clave">Pantalla</div>
+          <div class="valor">
+            {% if procedimiento.ruta_pantalla %}<a href="{{ procedimiento.ruta_pantalla }}">{{ procedimiento.ruta_pantalla }}</a>
+            {% else %}—{% endif %}</div></div>
+      </div>
+    </div>
+    <div class="tarjeta">
+      <h2>Contenido</h2>
+      <pre style="white-space:pre-wrap; font-family:var(--mono); font-size:.82rem; margin:0">{{ procedimiento.contenido|default('(sin contenido)', true) }}</pre>
+    </div>
+    <div class="tarjeta">
+      <h2>Bitácora de cambios</h2>
+      <p class="pequeno tenue">RF-0.4</p>
+      <ul class="linea-tiempo">
+        {% for v in procedimiento.versiones|reverse %}
+          <li><strong>v{{ v.version }}</strong> — {{ v.cambio|default('sin descripción', true) }}
+            <div class="cuando">{{ v.fecha|fecha_hora }} · {{ v.autor|default('—', true) }}</div></li>
+        {% else %}
+          <li class="tenue">Sin versiones anteriores.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="tarjeta"><div class="vacio">Procedimiento no encontrado.</div></div>
+  {% endif %}
+{% endblock %}

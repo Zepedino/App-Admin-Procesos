@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Iniciar aplicacion",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/iniciar.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Ejecutar los tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "console": "integratedTerminal"
+    }
+  ]
+}
