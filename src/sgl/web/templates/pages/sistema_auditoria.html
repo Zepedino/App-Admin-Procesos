@@ -1,0 +1,42 @@
+{% extends "layout/base.html" %}
+{% block subtitulo %}
+  <p class="suave">
+    PRD §6 · quién cambió qué, con énfasis en montos y multas.
+    Las filas no se editan ni se borran.
+  </p>
+{% endblock %}
+{% block contenido %}
+  <div class="tarjeta">
+    <form method="get" class="fila">
+      <div><label for="entidad">Entidad</label>
+        <input type="text" name="entidad" id="entidad" value="{{ entidad }}" placeholder="Licitacion"></div>
+      <div><label for="actor">Actor</label>
+        <input type="text" name="actor" id="actor" value="{{ actor }}" placeholder="correo o job"></div>
+      <div class="estrecho"><button class="boton principal" type="submit">Filtrar</button></div>
+    </form>
+  </div>
+  <div class="tarjeta">
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th>Cuándo</th><th>Actor</th><th>Acción</th><th>Entidad</th>
+          <th>Campo</th><th>Antes</th><th>Después</th><th>Motivo</th></tr></thead>
+        <tbody>
+          {% for r in registros %}
+            <tr>
+              <td class="ajustado pequeno">{{ r.ocurrido_en|fecha_hora }}</td>
+              <td class="pequeno mono">{{ r.actor }}</td>
+              <td><span class="etiqueta">{{ r.accion }}</span></td>
+              <td class="pequeno">{{ r.entidad }}<div class="tenue mono">{{ r.entidad_id|default('', true) }}</div></td>
+              <td class="pequeno">{{ r.campo|default('—', true) }}</td>
+              <td class="pequeno tenue truncar">{{ r.valor_anterior|default('—', true) }}</td>
+              <td class="pequeno truncar">{{ r.valor_nuevo|default('—', true) }}</td>
+              <td class="pequeno tenue truncar">{{ r.motivo|default('—', true) }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="8" class="vacio">Sin registros de auditoría todavía.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

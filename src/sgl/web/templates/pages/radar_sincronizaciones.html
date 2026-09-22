@@ -1,0 +1,65 @@
+{% extends "layout/base.html" %}
+{% block acciones %}
+  <form method="post" action="/radar/sincronizar" class="horizontal">
+    <input type="date" name="dia">
+    <button class="boton principal" type="submit">Sincronizar día</button>
+  </form>
+{% endblock %}
+{% block contenido %}
+
+  {% if huecos %}
+    <div class="aviso atencion">
+      <span class="icono">!</span>
+      <div><strong>Días sin sincronizar:</strong> {{ huecos|map('string')|join(', ') }}</div>
+    </div>
+  {% endif %}
+
+  <div class="rejilla cols-2">
+    <div class="tarjeta">
+      <h2>Historial</h2>
+      <p class="pequeno tenue">
+        «Total API» son las licitaciones del día; «detalles» las llamadas que
+        realmente se gastaron. La diferencia es lo que ahorra el filtro por nombre.
+      </p>
+      <div class="tabla-envoltura">
+        <table>
+          <thead><tr><th>Día</th><th class="num">Total API</th><th class="num">Candidatas</th>
+            <th class="num">Detalles</th><th class="num">Nuevas</th><th></th></tr></thead>
+          <tbody>
+            {% for s in sincronizaciones %}
+              <tr>
+                <td class="ajustado">{{ s.dia|fecha_corta }}</td>
+                <td class="num">{{ s.total_api }}</td>
+                <td class="num">{{ s.candidatas }}</td>
+                <td class="num">{{ s.detalles_pedidos }}</td>
+                <td class="num"><strong>{{ s.nuevas }}</strong></td>
+                <td>
+                  {% if s.ok %}<span class="etiqueta ok">ok</span>
+                  {% else %}<span class="etiqueta critico" title="{{ s.error }}">error</span>{% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="vacio">Todavía no se ha sincronizado ningún día.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Motivos de descarte (últimos 6 meses)</h2>
+      <p class="pequeno tenue">RF-1.5 · estos datos dicen si los criterios sirven.</p>
+      <div class="tabla-envoltura">
+        <table>
+          <tbody>
+            {% for motivo, total in estadisticas_descarte %}
+              <tr><td>{{ motivo }}</td><td class="num"><strong>{{ total }}</strong></td></tr>
+            {% else %}
+              <tr><td class="vacio">Aún no hay descartes registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

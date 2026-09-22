@@ -1,0 +1,92 @@
+{% extends "layout/base.html" %}
+{% block subtitulo %}
+  <p class="suave">
+    RF-0.3 · la revisión de los viernes deja de ser una práctica difusa y pasa a ser
+    una vista con alcance, responsable y registro de ejecución.
+  </p>
+{% endblock %}
+{% block contenido %}
+
+  <div class="rejilla cols-3">
+    <div class="metrica {{ 'critico' if revision.pendientes_vencidos }}">
+      <div class="valor">{{ revision.pendientes_vencidos }}</div>
+      <div class="etiqueta">Pendientes vencidos</div>
+      <div class="pie">cambios críticos sin cerrar</div>
+    </div>
+    <div class="metrica {{ 'atencion' if revision.procedimientos_por_revisar }}">
+      <div class="valor">{{ revision.procedimientos_por_revisar }}</div>
+      <div class="etiqueta">Procedimientos por revisar</div>
+    </div>
+    <div class="metrica">
+      <div class="valor">{{ revision.cambios_normativos }}</div>
+      <div class="etiqueta">Cambios normativos</div>
+      <div class="pie">registro manual por ahora</div>
+    </div>
+  </div>
+
+  <div class="rejilla cols-2">
+    <div class="tarjeta">
+      <h2>Registrar la revisión de hoy</h2>
+      <form method="post" action="/procesos/revision-semanal">
+        <div class="campo">
+          <label for="responsable">Quién la ejecutó</label>
+          <input type="text" name="responsable" id="responsable" required
+                 value="{{ revision.responsable or '' }}">
+        </div>
+        <div class="campo">
+          <label for="observaciones">Observaciones</label>
+          <textarea name="observaciones" id="observaciones">{{ revision.observaciones or '' }}</textarea>
+        </div>
+        <div class="campo">
+          <label for="acuerdos">Acuerdos</label>
+          <textarea name="acuerdos" id="acuerdos">{{ revision.acuerdos or '' }}</textarea>
+        </div>
+        <button class="boton principal" type="submit">Registrar ejecución</button>
+      </form>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Procedimientos con revisión vencida</h2>
+      <div class="tabla-envoltura">
+        <table>
+          <tbody>
+            {% for p in por_revisar %}
+              <tr>
+                <td><a href="/procesos/{{ p.codigo }}">{{ p.proceso }}</a>
+                  <div class="pequeno tenue mono">{{ p.codigo }}</div></td>
+                <td class="derecha pequeno">
+                  {% if p.dias_desde_revision is not none %}{{ p.dias_desde_revision }} días
+                  {% else %}<span class="etiqueta atencion">nunca revisado</span>{% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr><td class="vacio">Todo al día.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Historial de revisiones</h2>
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th>Fecha</th><th>Responsable</th><th>Ejecutada</th><th>Acuerdos</th></tr></thead>
+        <tbody>
+          {% for r in historial %}
+            <tr>
+              <td class="ajustado">{{ r.fecha|fecha_corta }}</td>
+              <td>{{ r.responsable|default('—', true) }}</td>
+              <td>{% if r.ejecutada %}<span class="etiqueta ok">sí</span>
+                  {% else %}<span class="etiqueta critico">no</span>{% endif %}</td>
+              <td class="pequeno tenue">{{ r.acuerdos|default('—', true)|truncate(80) }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="vacio">Sin revisiones registradas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

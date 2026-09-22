@@ -1,0 +1,54 @@
+{% extends "layout/base.html" %}
+{% block contenido %}
+  <div class="tarjeta">
+    <form method="get" class="fila">
+      <div>
+        <label for="q">Buscar en el nombre</label>
+        <input type="search" name="q" id="q" value="{{ q }}" placeholder="inspección técnica">
+      </div>
+      <div class="estrecho">
+        <label for="estado">Estado interno</label>
+        <select name="estado" id="estado">
+          <option value="">Todos</option>
+          {% for e in estados %}
+            <option value="{{ e.value }}" {{ 'selected' if estado_actual == e.value }}>{{ e.etiqueta }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="estrecho"><button class="boton principal" type="submit">Filtrar</button></div>
+    </form>
+  </div>
+
+  <div class="tarjeta">
+    <div class="entre"><h2 class="mb0">{{ licitaciones|length }} licitaciones</h2>
+      <span class="pequeno tenue">máximo 300 resultados</span></div>
+    {% if licitaciones %}
+      <div class="tabla-envoltura">
+        <table>
+          <thead><tr>
+            <th>Código</th><th>Nombre</th><th>Organismo</th><th>Tipo</th>
+            <th class="num">Monto</th><th>Estado</th><th>Cierra</th>
+          </tr></thead>
+          <tbody>
+            {% for l in licitaciones %}
+              <tr>
+                <td class="ajustado mono"><a href="/radar/licitaciones/{{ l.codigo }}">{{ l.codigo }}</a></td>
+                <td>{{ l.nombre|truncate(75) }}</td>
+                <td class="pequeno">{{ l.nombre_organismo|default('—', true)|truncate(35) }}</td>
+                <td class="ajustado">{{ l.tipo|default('—', true) }}</td>
+                <td class="num">{{ l.monto_estimado|monto(l.moneda or 'CLP') }}</td>
+                <td><span class="etiqueta">{{ l.estado_seguimiento }}</span></td>
+                <td class="ajustado pequeno">
+                  {{ l.fecha_cierre|fecha_corta }}
+                  <span class="etiqueta {{ l.fecha_cierre|urgencia_cierre }}">{{ l.fecha_cierre|cuenta_regresiva }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="vacio">Sin resultados. Si nunca se ha sincronizado, hazlo desde la bandeja del día.</div>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "layout/base.html" %}
+{% block encabezado %}Inicio{% endblock %}
+{% block subtitulo %}
+  <p class="suave">Estado real del sistema. Lo que dice esta pantalla es lo que hay construido.</p>
+{% endblock %}
+{% block contenido %}
+
+  <div class="rejilla cols-4">
+    <div class="metrica">
+      <div class="valor">{{ resumen.total }}</div>
+      <div class="etiqueta">Licitaciones en el sistema</div>
+    </div>
+    <div class="metrica {{ 'atencion' if resumen.por_estado.get('nueva', 0) }}">
+      <div class="valor">{{ resumen.por_estado.get('nueva', 0) }}</div>
+      <div class="etiqueta">Sin revisar</div>
+      <div class="pie"><a href="/radar/">ir a la bandeja</a></div>
+    </div>
+    <div class="metrica">
+      <div class="valor">{{ resumen.por_estado.get('interesa', 0) }}</div>
+      <div class="etiqueta">Marcadas «interesa»</div>
+    </div>
+    <div class="metrica">
+      <div class="valor">{{ resumen.cuota.usadas }}</div>
+      <div class="etiqueta">Llamadas API hoy</div>
+      <div class="barra {{ 'critico' if resumen.cuota.degradado }}">
+        <span style="width: {{ resumen.cuota.porcentaje }}%"></span>
+      </div>
+      <div class="pie">tope {{ resumen.cuota.tope }} · degrada al 80 %</div>
+    </div>
+  </div>
+
+  <div class="rejilla cols-2">
+    <div class="tarjeta">
+      <h2>Avance por fase</h2>
+      <p class="pequeno tenue">Fases del PRD, ordenadas por valor sobre esfuerzo.</p>
+      <div class="tabla-envoltura">
+        <table>
+          <thead><tr><th>Módulo</th><th>Fase</th><th>Estado</th></tr></thead>
+          <tbody>
+            {% for m in modulos %}
+              <tr>
+                <td><a href="/sistema/modulos#{{ m.id }}">{{ m.nombre }}</a>
+                  <div class="pequeno tenue mono">{{ m.id }}</div></td>
+                <td class="ajustado">{{ m.fase }}</td>
+                <td>
+                  <span class="etiqueta {{ {'completo':'ok','parcial':'atencion','esqueleto':'info','planificado':'neutro'}[m.estado.value] }}">
+                    {{ m.estado.value }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Lo primero que hay que resolver</h2>
+      <p class="pequeno tenue">Preguntas abiertas del PRD que bloquean módulos completos.</p>
+      <ul class="linea-tiempo">
+        <li><strong>Ticket de Mercado Público</strong> — se solicita con Clave Única y demora.
+          Sin él el sistema opera con respuestas guardadas.
+          <div class="cuando">bloquea: operación en vivo</div></li>
+        <li class="critico"><strong>Criterios reales de postulación de Daniela</strong> —
+          «la conversación más valiosa del proyecto» según el PRD.
+          <div class="cuando">bloquea: M3 scoring go/no-go</div></li>
+        <li><strong>¿Qué hacen hoy en los primeros 10 días tras ganar?</strong>
+          <div class="cuando">bloquea: M5 plan de puesta en marcha</div></li>
+        <li><strong>SERVIU y Servicio de Salud, ¿son dos clientes distintos?</strong>
+          Cambia el modelo de contratos y de caja.
+          <div class="cuando">bloquea: M6 flujo de caja</div></li>
+        <li><strong>Términos de uso del portal</strong> — revisarlos antes de activar el scraper.
+          <div class="cuando">bloquea: M2 descarga de anexos</div></li>
+      </ul>
+    </div>
+  </div>
+{% endblock %}

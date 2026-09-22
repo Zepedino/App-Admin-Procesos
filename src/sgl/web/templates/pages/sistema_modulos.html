@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+{% block subtitulo %}
+  <p class="suave">
+    Estado real de construcción. Esta pantalla se genera desde el registro de módulos,
+    no se escribe a mano, así que no puede quedar desactualizada.
+  </p>
+{% endblock %}
+{% block contenido %}
+
+  <div class="rejilla cols-4">
+    {% for estado, total in resumen.items() %}
+      <div class="metrica">
+        <div class="valor">{{ total }}</div>
+        <div class="etiqueta">{{ estado }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% for fase, lista_modulos in por_fase.items() %}
+    <div class="tarjeta">
+      <h2>Fase {{ fase }}{% if fase == 0 %} — transversal{% endif %}</h2>
+      {% for m in lista_modulos %}
+        <div id="{{ m.id }}" style="padding:.75rem 0; border-bottom:1px solid var(--borde)">
+          <div class="entre">
+            <div>
+              <strong>{{ m.nombre }}</strong>
+              <span class="mono pequeno tenue">{{ m.id }}</span>
+            </div>
+            <span class="etiqueta {{ {'completo':'ok','parcial':'atencion','esqueleto':'info','planificado':'neutro'}[m.estado.value] }}">
+              {{ m.estado.value }}
+            </span>
+          </div>
+          <p class="pequeno suave" style="margin:.3rem 0">{{ m.descripcion }}</p>
+          <div class="pequeno tenue">
+            Requisitos: {{ m.requisitos|join(', ') }}
+            {% if m.depende_de %} · depende de {{ m.depende_de|join(', ') }}{% endif %}
+            {% if m.router %} · <a href="{{ m.prefijo_url }}/">abrir</a>{% endif %}
+          </div>
+          {% if m.notas %}
+            <div class="aviso info" style="margin-top:.5rem"><span class="icono">i</span><div>{{ m.notas }}</div></div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+{% endblock %}

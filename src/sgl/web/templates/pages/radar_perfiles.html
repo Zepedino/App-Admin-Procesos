@@ -1,0 +1,37 @@
+{% extends "layout/base.html" %}
+{% block subtitulo %}
+  <p class="suave">RF-1.2 · nada hardcodeado: los criterios del radar se editan aquí.</p>
+{% endblock %}
+{% block acciones %}
+  <a class="boton principal" href="/radar/perfiles/0">Nuevo perfil</a>
+{% endblock %}
+{% block contenido %}
+  <div class="tarjeta">
+    {% if perfiles %}
+      <div class="tabla-envoltura">
+        <table>
+          <thead><tr><th>Perfil</th><th>Palabras clave</th><th>Excluidas</th>
+            <th>Regiones</th><th class="num">Umbral</th><th>Estado</th></tr></thead>
+          <tbody>
+            {% for p in perfiles %}
+              <tr>
+                <td><a href="/radar/perfiles/{{ p.id }}"><strong>{{ p.nombre }}</strong></a></td>
+                <td class="pequeno">{{ p.palabras_clave|lista }}</td>
+                <td class="pequeno tenue">{{ p.palabras_excluidas|lista }}</td>
+                <td class="pequeno">{{ p.regiones|lista }}</td>
+                <td class="num">{{ "%.2f"|format(p.umbral_interes) }}</td>
+                <td><span class="etiqueta {{ 'ok' if p.activo else 'neutro' }}">
+                  {{ 'Activo' if p.activo else 'Inactivo' }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="vacio">
+        No hay perfiles. <strong>Sin al menos un perfil activo el radar no sincroniza nada.</strong><br>
+        <a class="boton principal mt" href="/radar/perfiles/0">Crear el primero</a>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

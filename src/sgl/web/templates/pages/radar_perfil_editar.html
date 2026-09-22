@@ -1,0 +1,103 @@
+{% extends "layout/base.html" %}
+{% block subtitulo %}
+  <p class="suave">
+    Una entrada por línea. El filtro compara con límites de palabra, así que
+    «ITO» no calza dentro de «Tránsito».
+  </p>
+{% endblock %}
+{% block contenido %}
+  <form method="post" action="/radar/perfiles/{{ perfil.id if perfil else 0 }}">
+    <div class="rejilla cols-2">
+
+      <div class="tarjeta">
+        <h2>Identificación</h2>
+        <div class="campo">
+          <label for="nombre">Nombre del perfil</label>
+          <input type="text" name="nombre" id="nombre" required
+                 value="{{ perfil.nombre if perfil else '' }}" placeholder="ITO viviendas SERVIU">
+        </div>
+        <div class="checkbox">
+          <input type="checkbox" name="activo" id="activo" value="true"
+                 {{ 'checked' if not perfil or perfil.activo }}>
+          <label for="activo">Perfil activo</label>
+        </div>
+        <div class="campo mt">
+          <label for="umbral_interes">Umbral de interés (0 a 1)</label>
+          <input type="number" name="umbral_interes" id="umbral_interes" step="0.05" min="0" max="1"
+                 value="{{ perfil.umbral_interes if perfil else 0.5 }}">
+          <div class="ayuda">
+            Sobre este puntaje la licitación se considera candidata. Más adelante
+            también dispara la descarga automática de anexos (RF-2.2).
+          </div>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <h2>Filtros numéricos</h2>
+        <div class="fila">
+          <div>
+            <label for="monto_minimo">Monto mínimo (CLP)</label>
+            <input type="text" name="monto_minimo" id="monto_minimo"
+                   value="{{ perfil.monto_minimo|int if perfil and perfil.monto_minimo else '' }}">
+          </div>
+          <div>
+            <label for="monto_maximo">Monto máximo (CLP)</label>
+            <input type="text" name="monto_maximo" id="monto_maximo"
+                   value="{{ perfil.monto_maximo|int if perfil and perfil.monto_maximo else '' }}">
+          </div>
+        </div>
+        <div class="ayuda">
+          Si el organismo no publicó el monto, la licitación no se descarta por este filtro:
+          no publicarlo es frecuente y no dice nada sobre si sirve.
+        </div>
+        <div class="checkbox mt">
+          <input type="checkbox" name="solo_obras" id="solo_obras" value="true"
+                 {{ 'checked' if perfil and perfil.solo_obras }}>
+          <label for="solo_obras">Solo licitaciones marcadas como obras</label>
+        </div>
+        <div class="campo mt">
+          <label for="tipos_licitacion">Tipos de licitación</label>
+          <textarea name="tipos_licitacion" id="tipos_licitacion" style="min-height:60px"
+            placeholder="LS&#10;LE&#10;LP">{{ (perfil.tipos_licitacion or [])|join('\n') if perfil }}</textarea>
+          <div class="ayuda">LS servicios especializados · LE 100–1000 UTM · LP más de 1000 UTM</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rejilla cols-2">
+      <div class="tarjeta">
+        <h2>Palabras clave</h2>
+        <div class="campo">
+          <label for="palabras_clave">Incluir</label>
+          <textarea name="palabras_clave" id="palabras_clave"
+            placeholder="inspección técnica&#10;ITO&#10;asesoría a la inspección&#10;supervisión de obras">{{ (perfil.palabras_clave or [])|join('\n') if perfil }}</textarea>
+        </div>
+        <div class="campo">
+          <label for="palabras_excluidas">Excluir</label>
+          <textarea name="palabras_excluidas" id="palabras_excluidas"
+            placeholder="suministro&#10;arriendo&#10;provisión de">{{ (perfil.palabras_excluidas or [])|join('\n') if perfil }}</textarea>
+          <div class="ayuda">Una exclusión gana siempre: si aparece, la licitación no es candidata.</div>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <h2>Geografía y categorías</h2>
+        <div class="campo">
+          <label for="regiones">Regiones</label>
+          <textarea name="regiones" id="regiones" style="min-height:70px"
+            placeholder="Región de La Araucanía&#10;Región del Biobío">{{ (perfil.regiones or [])|join('\n') if perfil }}</textarea>
+          <div class="ayuda">Coincidencia parcial: basta con «Araucanía».</div>
+        </div>
+        <div class="campo">
+          <label for="categorias_unspsc">Categorías UNSPSC</label>
+          <textarea name="categorias_unspsc" id="categorias_unspsc" style="min-height:70px"
+            placeholder="72131500&#10;811015">{{ (perfil.categorias_unspsc or [])|join('\n') if perfil }}</textarea>
+          <div class="ayuda">Se compara por prefijo: «7213» cubre toda esa familia.</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="boton principal" type="submit">Guardar perfil</button>
+    <a class="boton" href="/radar/perfiles">Cancelar</a>
+  </form>
+{% endblock %}

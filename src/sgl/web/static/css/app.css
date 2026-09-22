@@ -1,0 +1,324 @@
+/* Sistema de diseño del SGL.
+   Un solo archivo, sin build, sin CDN. Se audita leyéndolo.
+   Tokens primero; los componentes solo consumen tokens. */
+
+:root {
+  color-scheme: light dark;
+
+  /* Neutros: gris muy ligeramente azulado, para que el blanco no canse */
+  --fondo:        #f6f7f9;
+  --superficie:   #ffffff;
+  --superficie-2: #f0f2f5;
+  --borde:        #dfe3e8;
+  --borde-fuerte: #c4cad2;
+  --texto:        #16202b;
+  --texto-suave:  #5b6675;
+  --texto-tenue:  #8a94a1;
+
+  /* Acento: azul institucional sobrio */
+  --acento:        #1f5fa8;
+  --acento-suave:  #e8f0fa;
+  --acento-fuerte: #17497f;
+
+  /* Semánticos. Los estados de una licitación se leen por color antes que por texto. */
+  --critico:       #b4232a;
+  --critico-suave: #fdecec;
+  --atencion:      #9a6207;
+  --atencion-suave:#fdf4e3;
+  --ok:            #1c6b4a;
+  --ok-suave:      #e6f4ee;
+  --info:          #1f5fa8;
+  --info-suave:    #e8f0fa;
+
+  --radio:    8px;
+  --radio-sm: 5px;
+  --sombra:   0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .05);
+  --sombra-md:0 4px 12px rgba(16, 24, 40, .08);
+
+  --ancho-lateral: 236px;
+  --fuente: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo:        #12161c;
+    --superficie:   #1a1f27;
+    --superficie-2: #222833;
+    --borde:        #2c3441;
+    --borde-fuerte: #3c4757;
+    --texto:        #e6eaf0;
+    --texto-suave:  #a3adbb;
+    --texto-tenue:  #78828f;
+    --acento:        #6aa5e8;
+    --acento-suave:  #1b2b40;
+    --acento-fuerte: #8dbdf0;
+    --critico:       #f08a8f;
+    --critico-suave: #3a1d1f;
+    --atencion:      #e0b464;
+    --atencion-suave:#3a2f1a;
+    --ok:            #6cc79c;
+    --ok-suave:      #17332a;
+    --info:          #6aa5e8;
+    --info-suave:    #1b2b40;
+    --sombra:   0 1px 2px rgba(0,0,0,.4);
+    --sombra-md:0 4px 12px rgba(0,0,0,.45);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--texto);
+  background: var(--fondo);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--acento); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1, h2, h3 { margin: 0 0 .5rem; line-height: 1.25; font-weight: 600; }
+h1 { font-size: 1.4rem; letter-spacing: -.01em; }
+h2 { font-size: 1.05rem; }
+h3 { font-size: .9rem; color: var(--texto-suave); text-transform: uppercase;
+     letter-spacing: .06em; font-weight: 600; }
+
+code, .mono { font-family: var(--mono); font-size: .86em; }
+
+/* ── Estructura ──────────────────────────────────────────────────────────── */
+
+.app { display: flex; min-height: 100vh; }
+
+.lateral {
+  width: var(--ancho-lateral);
+  flex: 0 0 var(--ancho-lateral);
+  background: var(--superficie);
+  border-right: 1px solid var(--borde);
+  padding: 1rem .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  position: sticky;
+  top: 0;
+  /* align-self evita que el estiramiento por defecto del flex le dé al aside la
+     altura completa del contenedor: sin esto, `sticky` no tiene margen donde
+     pegarse y la barra se va con el scroll. */
+  align-self: flex-start;
+  /* max-height en vez de height: si el contenedor reporta una altura de
+     viewport degenerada (paneles embebidos, algunos webviews), la barra se
+     dimensiona por su contenido en vez de colapsar a cero. */
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+.marca { display: flex; flex-direction: column; gap: .1rem; padding: .25rem .5rem 0; }
+.marca strong { font-size: .95rem; letter-spacing: -.01em; }
+.marca span { font-size: .72rem; color: var(--texto-tenue); }
+
+.nav { display: flex; flex-direction: column; gap: .1rem; }
+.nav-grupo { margin-top: .75rem; padding: 0 .5rem .25rem; font-size: .68rem;
+             text-transform: uppercase; letter-spacing: .08em; color: var(--texto-tenue); }
+.nav a {
+  padding: .4rem .5rem; border-radius: var(--radio-sm);
+  color: var(--texto-suave); font-size: .875rem;
+  display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+}
+.nav a:hover { background: var(--superficie-2); color: var(--texto); text-decoration: none; }
+.nav a.activo { background: var(--acento-suave); color: var(--acento-fuerte); font-weight: 600; }
+
+.principal { flex: 1; min-width: 0; padding: 1.25rem 1.5rem 3rem; }
+
+.encabezado {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+}
+.encabezado .acciones { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+
+/* ── Avisos de procedencia ───────────────────────────────────────────────── */
+
+/* Regla dura de IA n.3 y honestidad del origen de datos: si lo que se ve no
+   viene de la fuente en vivo, se dice en pantalla, no en la documentación. */
+.aviso {
+  display: flex; gap: .6rem; align-items: flex-start;
+  padding: .6rem .8rem; border-radius: var(--radio);
+  border: 1px solid var(--borde); background: var(--superficie);
+  margin-bottom: 1rem; font-size: .85rem;
+}
+.aviso .icono { flex: 0 0 auto; font-weight: 700; }
+.aviso.atencion { background: var(--atencion-suave); border-color: var(--atencion); color: var(--atencion); }
+.aviso.critico  { background: var(--critico-suave);  border-color: var(--critico);  color: var(--critico); }
+.aviso.info     { background: var(--info-suave);     border-color: var(--info);     color: var(--info); }
+.aviso a { color: inherit; text-decoration: underline; }
+
+.marca-ia {
+  display: inline-flex; align-items: center; gap: .25rem;
+  font-size: .7rem; font-weight: 600; padding: .1rem .4rem;
+  border-radius: 999px; background: var(--acento-suave); color: var(--acento-fuerte);
+  border: 1px solid var(--acento);
+}
+
+/* ── Tarjetas y rejillas ─────────────────────────────────────────────────── */
+
+.tarjeta {
+  background: var(--superficie); border: 1px solid var(--borde);
+  border-radius: var(--radio); box-shadow: var(--sombra);
+  padding: 1rem; margin-bottom: 1rem;
+}
+.tarjeta > h2 { margin-bottom: .75rem; }
+.tarjeta.compacta { padding: .75rem; }
+
+.rejilla { display: grid; gap: 1rem; }
+.rejilla.cols-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.rejilla.cols-3 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.rejilla.cols-4 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
+.metrica { background: var(--superficie); border: 1px solid var(--borde);
+           border-radius: var(--radio); padding: .8rem .9rem; }
+.metrica .valor { font-size: 1.6rem; font-weight: 650; letter-spacing: -.02em; line-height: 1.1; }
+.metrica .etiqueta { font-size: .75rem; color: var(--texto-suave); text-transform: uppercase;
+                     letter-spacing: .05em; margin-top: .2rem; }
+.metrica .pie { font-size: .75rem; color: var(--texto-tenue); margin-top: .35rem; }
+.metrica.critico .valor { color: var(--critico); }
+.metrica.atencion .valor { color: var(--atencion); }
+.metrica.ok .valor { color: var(--ok); }
+
+/* ── Tablas ──────────────────────────────────────────────────────────────── */
+
+.tabla-envoltura { overflow-x: auto; border-radius: var(--radio); }
+
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+thead th {
+  text-align: left; font-weight: 600; font-size: .72rem; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--texto-suave);
+  padding: .5rem .6rem; border-bottom: 1px solid var(--borde-fuerte);
+  white-space: nowrap; background: var(--superficie-2);
+}
+tbody td { padding: .55rem .6rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+tbody tr:hover { background: var(--superficie-2); }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.ajustado { white-space: nowrap; }
+
+.vacio { padding: 1.5rem; text-align: center; color: var(--texto-tenue); font-size: .875rem; }
+
+/* ── Etiquetas de estado ─────────────────────────────────────────────────── */
+
+.etiqueta {
+  display: inline-block; padding: .1rem .45rem; border-radius: var(--radio-sm);
+  font-size: .72rem; font-weight: 600; white-space: nowrap;
+  background: var(--superficie-2); color: var(--texto-suave);
+  border: 1px solid var(--borde);
+}
+.etiqueta.critico  { background: var(--critico-suave);  color: var(--critico);  border-color: var(--critico); }
+.etiqueta.atencion { background: var(--atencion-suave); color: var(--atencion); border-color: var(--atencion); }
+.etiqueta.ok       { background: var(--ok-suave);       color: var(--ok);       border-color: var(--ok); }
+.etiqueta.info     { background: var(--info-suave);     color: var(--info);     border-color: var(--info); }
+.etiqueta.vencido  { background: var(--critico); color: #fff; border-color: var(--critico); }
+.etiqueta.neutro, .etiqueta.normal { }
+
+/* ── Formularios ─────────────────────────────────────────────────────────── */
+
+label { display: block; font-size: .78rem; font-weight: 600; color: var(--texto-suave);
+        margin-bottom: .25rem; }
+.campo { margin-bottom: .85rem; }
+.ayuda { font-size: .75rem; color: var(--texto-tenue); margin-top: .25rem; }
+
+input[type=text], input[type=number], input[type=date], input[type=search],
+select, textarea {
+  width: 100%; padding: .45rem .6rem; font: inherit; font-size: .875rem;
+  color: var(--texto); background: var(--superficie);
+  border: 1px solid var(--borde-fuerte); border-radius: var(--radio-sm);
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--acento); outline-offset: -1px; border-color: var(--acento);
+}
+textarea { min-height: 90px; resize: vertical; font-family: var(--mono); font-size: .82rem; }
+
+.fila { display: flex; gap: .75rem; flex-wrap: wrap; align-items: flex-end; }
+.fila > * { flex: 1 1 180px; }
+.fila > .estrecho { flex: 0 0 140px; }
+
+.checkbox { display: flex; align-items: center; gap: .4rem; }
+.checkbox input { width: auto; }
+.checkbox label { margin: 0; font-weight: 500; }
+
+/* ── Botones ─────────────────────────────────────────────────────────────── */
+
+.boton {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .4rem .75rem; font: inherit; font-size: .84rem; font-weight: 500;
+  border-radius: var(--radio-sm); border: 1px solid var(--borde-fuerte);
+  background: var(--superficie); color: var(--texto); cursor: pointer;
+  white-space: nowrap;
+}
+.boton:hover { background: var(--superficie-2); text-decoration: none; }
+.boton.principal { background: var(--acento); border-color: var(--acento); color: #fff; }
+.boton.principal:hover { background: var(--acento-fuerte); }
+.boton.peligro { color: var(--critico); border-color: var(--critico); }
+.boton.peligro:hover { background: var(--critico-suave); }
+.boton.pequeno { padding: .2rem .5rem; font-size: .78rem; }
+.boton:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Barra de progreso (cuota de API) ────────────────────────────────────── */
+
+.barra { height: 6px; background: var(--superficie-2); border-radius: 999px; overflow: hidden; }
+.barra > span { display: block; height: 100%; background: var(--ok); transition: width .3s; }
+.barra.atencion > span { background: var(--atencion); }
+.barra.critico  > span { background: var(--critico); }
+
+/* ── Detalle: pares clave/valor ──────────────────────────────────────────── */
+
+.datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .75rem 1.25rem; }
+.dato .clave { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em;
+               color: var(--texto-tenue); }
+.dato .valor { font-size: .9rem; margin-top: .1rem; }
+.dato .fuente { font-size: .72rem; color: var(--texto-tenue); margin-top: .15rem; }
+
+/* ── Línea de tiempo (cambios detectados) ────────────────────────────────── */
+
+.linea-tiempo { list-style: none; margin: 0; padding: 0; }
+.linea-tiempo li {
+  position: relative; padding: .5rem 0 .5rem 1.1rem;
+  border-bottom: 1px solid var(--borde); font-size: .85rem;
+}
+.linea-tiempo li:last-child { border-bottom: none; }
+.linea-tiempo li::before {
+  content: ""; position: absolute; left: 0; top: .95rem;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--borde-fuerte);
+}
+.linea-tiempo li.critico::before { background: var(--critico); }
+.linea-tiempo .cuando { color: var(--texto-tenue); font-size: .75rem; }
+.diff-antes { color: var(--critico); text-decoration: line-through; }
+.diff-despues { color: var(--ok); font-weight: 600; }
+
+/* ── Utilidades mínimas ──────────────────────────────────────────────────── */
+
+.suave { color: var(--texto-suave); }
+.tenue { color: var(--texto-tenue); }
+.pequeno { font-size: .8rem; }
+.derecha { text-align: right; }
+.entre { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+.pila { display: flex; flex-direction: column; gap: .2rem; }
+.horizontal { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.mt { margin-top: 1rem; }
+.mb0 { margin-bottom: 0; }
+.truncar { max-width: 46ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Responsive: M5.5 y M8 deben funcionar en teléfono (PRD §6) ──────────── */
+
+@media (max-width: 860px) {
+  .app { flex-direction: column; }
+  .lateral {
+    width: 100%; flex: none; height: auto; position: static;
+    border-right: none; border-bottom: 1px solid var(--borde);
+    flex-direction: row; align-items: center; gap: .75rem; overflow-x: auto;
+    padding: .6rem .75rem;
+  }
+  .nav { flex-direction: row; gap: .25rem; }
+  .nav-grupo { display: none; }
+  .principal { padding: 1rem .85rem 2.5rem; }
+}

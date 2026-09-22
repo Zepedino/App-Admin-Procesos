@@ -1,0 +1,36 @@
+# Despliegue en Render. Un solo servicio sirve API y paginas.
+# La base de datos vive en Supabase (capa gratuita), no en Render.
+services:
+  - type: web
+    name: sgl
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install --upgrade pip && pip install -e .
+    # Un solo worker a proposito: el planificador de tareas corre dentro del
+    # proceso web. Con dos workers, cada job se ejecutaria dos veces y se
+    # gastaria el doble de cuota de la API.
+    startCommand: >
+      python -m sgl.cli init-db &&
+      uvicorn sgl.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /salud
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: APP_ENV
+        value: prod
+      - key: APP_TIMEZONE
+        value: America/Santiago
+      - key: APP_SECRET_KEY
+        generateValue: true
+      # Secretos: se cargan en el panel de Render, nunca en este archivo.
+      - key: DATABASE_URL
+        sync: false          # cadena de conexion de Supabase
+      - key: MP_TICKET
+        sync: false          # ticket de Clave Unica
+      - key: SCRAPER_CONTACTO_EMAIL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false

@@ -1,0 +1,5 @@
+# Normalizar finales de linea: el repo guarda LF, Windows recibe CRLF.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.docx binary

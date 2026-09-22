@@ -1,0 +1,106 @@
+{# Plantilla base. Toda pantalla hereda de aqui.
+
+   El aviso de procedencia de datos y el enlace al procedimiento (M0, RF-0.1)
+   son parte del layout, no de cada pagina: asi no se pueden olvidar. #}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{{ titulo|default("SGL") }}{% endblock %} · SGL</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#128203;</text></svg>">
+</head>
+<body>
+<div class="app">
+
+  <aside class="lateral">
+    <div class="marca">
+      <strong>SGL</strong>
+      <span>Licitaciones y contratos · ITO</span>
+    </div>
+
+    <nav class="nav">
+      <a href="/" class="{{ 'activo' if ruta_actual == '/' }}">Inicio</a>
+
+      <div class="nav-grupo">Radar (M1)</div>
+      <a href="/radar/" class="{{ 'activo' if ruta_actual.startswith('/radar/') and ruta_actual == '/radar/' }}">
+        Bandeja del día
+        {% if pendientes_bandeja %}<span class="etiqueta critico">{{ pendientes_bandeja }}</span>{% endif %}
+      </a>
+      <a href="/radar/licitaciones" class="{{ 'activo' if '/radar/licitaciones' in ruta_actual }}">Licitaciones</a>
+      <a href="/radar/perfiles" class="{{ 'activo' if '/radar/perfiles' in ruta_actual }}">Perfiles de interés</a>
+      <a href="/radar/organismos" class="{{ 'activo' if '/radar/organismos' in ruta_actual }}">Organismos</a>
+      <a href="/radar/sincronizaciones" class="{{ 'activo' if '/radar/sincronizaciones' in ruta_actual }}">Sincronizaciones</a>
+
+      <div class="nav-grupo">Procesos (M0)</div>
+      <a href="/procesos/" class="{{ 'activo' if ruta_actual == '/procesos/' }}">Procedimientos</a>
+      <a href="/procesos/revision-semanal" class="{{ 'activo' if 'revision-semanal' in ruta_actual }}">Revisión semanal</a>
+
+      <div class="nav-grupo">Sistema</div>
+      <a href="/sistema/modulos" class="{{ 'activo' if '/sistema/modulos' in ruta_actual }}">Módulos</a>
+      <a href="/sistema/jobs" class="{{ 'activo' if '/sistema/jobs' in ruta_actual }}">Tareas programadas</a>
+      <a href="/sistema/auditoria" class="{{ 'activo' if '/sistema/auditoria' in ruta_actual }}">Auditoría</a>
+    </nav>
+
+    <div class="pila pequeno tenue" style="margin-top:auto; padding:.5rem;">
+      <span>v{{ version }}</span>
+      <span>{{ entorno }}</span>
+    </div>
+  </aside>
+
+  <main class="principal">
+
+    {# Honestidad sobre el origen de los datos. Si no viene de la API en vivo,
+       se dice aqui y en todas las pantallas. #}
+    {% if not proveedor_en_vivo %}
+      <div class="aviso atencion">
+        <span class="icono">!</span>
+        <div>
+          <strong>Datos de respaldo, no de la API en vivo.</strong>
+          No hay <code>MP_TICKET</code> configurado, así que el sistema está leyendo
+          respuestas reales guardadas en <code>tests/fixtures/api/</code>.
+          Solicita el ticket con Clave Única y cárgalo en <code>.env</code> para operar en vivo.
+        </div>
+      </div>
+    {% endif %}
+
+    {% if cuota and cuota.degradado %}
+      <div class="aviso critico">
+        <span class="icono">!</span>
+        <div>
+          <strong>Cuota de API en modo degradado</strong> —
+          {{ cuota.usadas }} de {{ cuota.tope }} llamadas usadas hoy ({{ "%.0f"|format(cuota.porcentaje) }} %).
+          Solo se refresca lo que cierra en menos de 48 horas.
+        </div>
+      </div>
+    {% endif %}
+
+    {% if error %}
+      <div class="aviso critico"><span class="icono">!</span><div>{{ error }}</div></div>
+    {% endif %}
+
+    <div class="encabezado">
+      <div>
+        <h1>{% block encabezado %}{{ titulo|default("SGL") }}{% endblock %}</h1>
+        {% block subtitulo %}{% endblock %}
+      </div>
+      <div class="acciones">{% block acciones %}{% endblock %}</div>
+    </div>
+
+    {% block contenido %}{% endblock %}
+
+    {% block procedimiento %}
+      {% if procedimiento_codigo %}
+        <p class="pequeno tenue mt">
+          Procedimiento aplicable:
+          <a href="/procesos/{{ procedimiento_codigo }}">{{ procedimiento_codigo }}</a>
+          (RF-0.1)
+        </p>
+      {% endif %}
+    {% endblock %}
+
+  </main>
+</div>
+</body>
+</html>

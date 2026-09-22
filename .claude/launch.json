@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sgl",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "sgl.cli", "serve", "--port", "8010"],
+      "port": 8010
+    }
+  ]
+}
