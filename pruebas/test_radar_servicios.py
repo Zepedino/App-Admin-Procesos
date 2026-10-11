@@ -394,3 +394,80 @@ def test_sincronizar_guarda_todas_las_candidatas_no_solo_la_primera(bd, monkeypa
     with sesion() as s:
         guardadas = set(s.execute(select(Licitacion.codigo)).scalars().all())
     assert guardadas == set(codigos)
+
+
+def test_organismo_en_lista_negra_entra_ya_descartado(bd):
+    """Hallazgo 8: se decidio no trabajar con municipios.
+
+    La marca existia y la pantalla tambien, pero el filtro la ignoraba: las
+    municipalidades entraban a la bandeja como cualquier otra. Este test fija
+    que la decision de negocio se aplique sola.
+
+    Se guarda, no se borra: RF-1.5 necesita el registro para saber en seis
+    meses cuanto trabajo ahorro el criterio.
+    """
+    from backend.conectores.mercado_publico.base import LicitacionDetalle
+    from backend.modulos.m1_radar.models import (
+        EstadoSeguimiento,
+        Licitacion,
+        MotivoDescarte,
+        Organismo,
+    )
+    from backend.modulos.m1_radar.services import guardar_detalle
+
+    crudo = {
+        "CodigoExterno": "9999-1-LE26",
+        "Nombre": "Asesoria tecnica de obra municipal",
+        "CodigoEstado": 5,
+        "Tipo": "LE",
+        "Comprador": {"CodigoOrganismo": "7294", "NombreOrganismo": "I MUNICIPALIDAD DE PRUEBA"},
+        "Fechas": {"FechaCierre": "2026-12-01T15:00:00"},
+        "Items": {"Cantidad": 0, "Listado": []},
+    }
+
+    with sesion() as s:
+        s.add(
+            Organismo(
+                codigo_mp="7294",
+                nombre="I MUNICIPALIDAD DE PRUEBA",
+                lista_negra=True,
+                motivo_lista_negra="Hallazgo 8: mala calidad de servicio como contraparte",
+            )
+        )
+
+    with sesion() as s:
+        guardar_detalle(s, LicitacionDetalle.desde_api(crudo))
+
+    with sesion() as s:
+        lic = s.execute(
+            select(Licitacion).where(Licitacion.codigo == "9999-1-LE26")
+        ).scalar_one()
+        assert lic.estado_seguimiento == EstadoSeguimiento.DESCARTADA
+        assert lic.motivo_descarte == MotivoDescarte.ORGANISMO_EXCLUIDO
+        assert "Hallazgo 8" in (lic.detalle_descarte or "")
+        assert lic.descartada_por == "sistema:lista_negra"
+
+
+def test_organismo_normal_no_se_descarta(bd):
+    """La contracara: sin marca, la licitacion entra normal a la bandeja."""
+    from backend.conectores.mercado_publico.base import LicitacionDetalle
+    from backend.modulos.m1_radar.models import EstadoSeguimiento, Licitacion
+    from backend.modulos.m1_radar.services import guardar_detalle
+
+    crudo = {
+        "CodigoExterno": "8888-1-LE26",
+        "Nombre": "Inspeccion tecnica de obra",
+        "CodigoEstado": 5,
+        "Tipo": "LE",
+        "Comprador": {"CodigoOrganismo": "555", "NombreOrganismo": "SERVIU PRUEBA"},
+        "Fechas": {"FechaCierre": "2026-12-01T15:00:00"},
+        "Items": {"Cantidad": 0, "Listado": []},
+    }
+    with sesion() as s:
+        guardar_detalle(s, LicitacionDetalle.desde_api(crudo))
+    with sesion() as s:
+        lic = s.execute(
+            select(Licitacion).where(Licitacion.codigo == "8888-1-LE26")
+        ).scalar_one()
+        assert lic.estado_seguimiento == EstadoSeguimiento.NUEVA
+        assert lic.motivo_descarte is None

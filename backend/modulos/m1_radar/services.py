@@ -234,11 +234,29 @@ def guardar_detalle(
     es_nueva = licitacion is None
     cambios: list[CambioDetectado] = []
 
+    # Hallazgo 8 / RF-1.2: organismo en lista negra.
+    #
+    # Se guarda igual, pero entra ya descartada y con motivo: no ensucia la
+    # bandeja del dia y a la vez queda en las estadisticas de descarte, que es
+    # lo que RF-1.5 necesita para saber en seis meses si el criterio sirve.
+    # Borrarla sin registro haria invisible una decision de negocio.
+    en_lista_negra = bool(organismo is not None and organismo.lista_negra)
+
     if es_nueva:
         licitacion = Licitacion(
             codigo=detalle.codigo,
             origen=origen,
-            estado_seguimiento=EstadoSeguimiento.NUEVA,
+            estado_seguimiento=(
+                EstadoSeguimiento.DESCARTADA if en_lista_negra else EstadoSeguimiento.NUEVA
+            ),
+            motivo_descarte=MotivoDescarte.ORGANISMO_EXCLUIDO if en_lista_negra else None,
+            detalle_descarte=(
+                f"Organismo en lista negra: {organismo.motivo_lista_negra or 'sin motivo escrito'}"
+                if en_lista_negra
+                else None
+            ),
+            descartada_por="sistema:lista_negra" if en_lista_negra else None,
+            descartada_en=ahora_utc() if en_lista_negra else None,
             detectada_en=ahora_utc(),
             **valores,
         )
@@ -259,7 +277,28 @@ def guardar_detalle(
 
     s.flush()
 
-    if es_nueva:
+    if es_nueva and en_lista_negra:
+        # No se emite "detectada": nadie debe recibir un aviso por algo que el
+        # sistema acaba de descartar solo. Se emite el descarte, que es lo que
+        # realmente paso, y asi queda en la auditoria y en las estadisticas.
+        registrar(
+            s,
+            accion="descartar_automatico",
+            entidad="Licitacion",
+            entidad_id=licitacion.codigo,
+            campo="estado_seguimiento",
+            valor_nuevo=EstadoSeguimiento.DESCARTADA,
+            motivo=f"organismo en lista negra: {licitacion.nombre_organismo}",
+            modulo="m1_radar",
+        )
+        BUS.emitir(
+            Eventos.LICITACION_DESCARTADA,
+            origen="m1_radar",
+            codigo=licitacion.codigo,
+            motivo=str(MotivoDescarte.ORGANISMO_EXCLUIDO),
+            por="sistema:lista_negra",
+        )
+    elif es_nueva:
         BUS.emitir(
             Eventos.LICITACION_DETECTADA,
             origen="m1_radar",
