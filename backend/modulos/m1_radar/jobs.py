@@ -177,6 +177,18 @@ def registrar_suscripciones() -> None:
     )
 
 
+def vigilancia_de_organismos() -> dict:
+    """RF-1.2: consulta dirigida a los organismos marcados como vigilados.
+
+    Corre por la manana, fuera de la ventana de carga masiva, porque son pocas
+    llamadas (una por organismo) y lo que importa es enterarse temprano: si el
+    SERVIU publico algo anoche, debe estar en la bandeja al llegar a la oficina.
+    """
+    from backend.modulos.m1_radar.vigilancia import revisar_organismos_vigilados
+
+    return revisar_organismos_vigilados().a_dict()
+
+
 def registrar_jobs(planificador) -> None:
     """Registra los jobs de M1. Lo llama la fabrica de la aplicacion."""
     planificador.registrar_cron(
@@ -191,6 +203,13 @@ def registrar_jobs(planificador) -> None:
         pull_liviano_cierres_proximos,
         descripcion="RF-1.1 Refresco de licitaciones que cierran en menos de 72h",
         horas=4,
+    )
+    planificador.registrar_cron(
+        "m1_radar.vigilancia_organismos",
+        vigilancia_de_organismos,
+        descripcion="RF-1.2 Vigilancia dirigida de organismos (SERVIU y otros)",
+        hora=7,
+        minuto=30,
     )
     planificador.registrar_cron(
         "m1_radar.cierres_inminentes",

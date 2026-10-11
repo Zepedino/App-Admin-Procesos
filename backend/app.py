@@ -89,7 +89,7 @@ def _montar_modulos(app: FastAPI) -> None:
             )
         if modulo.registrar_suscripciones is not None:
             modulo.registrar_suscripciones()
-        if modulo.registrar_jobs is not None and not PLANIFICADOR.existe(f"{modulo.id}.__marca__"):
+        if modulo.registrar_jobs is not None and not PLANIFICADOR.tiene_jobs_de(modulo.id):
             modulo.registrar_jobs(PLANIFICADOR)
 
 

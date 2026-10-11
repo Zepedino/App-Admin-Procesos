@@ -3,6 +3,13 @@
   <p class="suave">
     Hallazgo 8 · excluir un organismo exige motivo escrito, y queda en la auditoría.
   </p>
+  <p class="suave">
+    <strong>Vigilado</strong> significa que cada mañana se consulta a ese organismo
+    directamente por su código, y se trae <em>todo</em> lo que tenga abierto. El listado
+    diario de la API no dice de quién es cada licitación, así que sin esto se pierden
+    las que no mencionan las palabras clave en el título — y el SERVIU publica varias
+    llamadas solo «LP 110-2026».
+  </p>
 {% endblock %}
 {% block contenido %}
   <div class="tarjeta">
@@ -10,13 +17,18 @@
       <div class="tabla-envoltura">
         <table>
           <thead><tr><th>Código</th><th>Organismo</th><th>Región</th>
-            <th>Lista negra</th><th>Motivo</th><th></th></tr></thead>
+            <th>Vigilado</th><th>Lista negra</th><th>Motivo</th><th></th></tr></thead>
           <tbody>
             {% for o in organismos %}
               <tr>
                 <td class="mono ajustado">{{ o.codigo_mp }}</td>
                 <td>{{ o.nombre|truncate(60) }}</td>
                 <td class="pequeno">{{ o.region|default('—', true) }}</td>
+                <td>
+                  {% if o.vigilado %}
+                    <span class="etiqueta info" title="Consulta dirigida diaria">Vigilado</span>
+                  {% else %}<span class="tenue">—</span>{% endif %}
+                </td>
                 <td>
                   {% if o.lista_negra %}<span class="etiqueta critico">Excluido</span>
                   {% else %}<span class="etiqueta ok">Habilitado</span>{% endif %}

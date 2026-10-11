@@ -151,6 +151,21 @@ Campos clave para el scoring: monto estimado y su naturaleza (1=presupuesto disp
   - **Lista negra de organismos** con motivo registrado (hallazgo 8)
   - Lista blanca (SERVIU por región)
 - **RF-1.3** Deduplicación: lo ya visto o descartado no reaparece como nuevo.
+- **RF-1.2bis — Vigilancia dirigida por organismo.** *(agregado tras verificar con
+  datos reales, octubre 2026)*
+  El listado diario de la API **no incluye el organismo comprador**, así que el
+  filtro por palabras clave es lo único disponible en la pasada barata. Medido
+  sobre 8.132 licitaciones de 7 días hábiles: el radar capturó **cero** del
+  SERVIU. No por ausencia, sino porque el SERVIU las titula *"Fiscalización
+  Técnica de Obras" (FTO)* y el perfil buscaba *"inspección técnica"*; se
+  perdieron 11 del rubro exacto, varias de los programas DS49 y DS27.
+  Además, el SERVIU publica licitaciones llamadas solo `LP 110-2026`, sin
+  ninguna palabra útil en el título: ningún perfil las encontraría.
+  **Por eso:** los organismos marcados como vigilados se consultan por su
+  código (`CodigoOrganismo` + `estado=activas`), lo que devuelve todo lo que
+  tengan abierto. Trece SERVIU son trece llamadas de las 10.000 diarias.
+  El perfil se sigue evaluando sobre ellas, pero **para ordenar, no para
+  filtrar**: de un organismo vigilado se revisa todo.
 - **RF-1.4** **Detección de cambios / adendas.** Si cambia la fecha de cierre, se publica una aclaración o se modifica el monto, se genera alerta con el *diff*. Si hay anexos nuevos, se dispara re-scraping (ver M2).
 - **RF-1.5** Descarte con motivo tipificado obligatorio. En 6 meses estos datos dicen si los criterios sirven.
 - **RF-1.6** Vista "bandeja del día": lo nuevo, lo que cambió, lo que cierra pronto.

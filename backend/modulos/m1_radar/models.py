@@ -128,6 +128,19 @@ class Organismo(ModeloBase, Auditable):
     motivo_lista_negra: Mapped[str | None] = mapped_column(Text)
     lista_blanca: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
+    #: Vigilancia dirigida (RF-1.2, lista blanca por region).
+    #:
+    #: El listado por fecha de la API NO trae el organismo comprador, asi que
+    #: en la pasada barata es imposible filtrar por "es del SERVIU": solo se
+    #: puede por palabras del nombre. Si el organismo titula una licitacion de
+    #: forma inesperada, se pierde y nadie se entera.
+    #:
+    #: Para los organismos marcados aqui se hace una consulta dirigida diaria
+    #: por su codigo, que devuelve TODAS sus licitaciones activas. Cuesta una
+    #: llamada por organismo y elimina ese punto ciego.
+    vigilado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    vigilado_desde: Mapped[datetime | None] = mapped_column(FechaHoraUTC)
+
     # Alimentado por M6 (RF-6.6) y ponderado por el scoring de M3.
     riesgo_pago: Mapped[str | None] = mapped_column(String(20))
     dias_pago_promedio: Mapped[int | None] = mapped_column(Integer)

@@ -15,10 +15,10 @@ que el resultado incluya SIEMPRE que palabra hizo match, para poder auditarlo.
 
 from __future__ import annotations
 
-import re
-import unicodedata
 from dataclasses import dataclass, field
 from typing import Any
+
+from backend.nucleo.texto import normalizar, patron_de_frase
 
 #: Peso de cada senal en el puntaje final. Editable sin tocar la logica.
 PESOS = {
@@ -27,26 +27,6 @@ PESOS = {
     "region": 0.15,
     "tipo": 0.10,
 }
-
-
-def normalizar(texto: str) -> str:
-    """Minusculas sin tildes. Las bases mezclan 'INSPECCION' e 'Inspeccion'."""
-    if not texto:
-        return ""
-    descompuesto = unicodedata.normalize("NFD", texto.lower())
-    return "".join(c for c in descompuesto if unicodedata.category(c) != "Mn")
-
-
-def _patron_de(frase: str) -> re.Pattern[str]:
-    """Compila una frase a un patron con limites de palabra.
-
-    Los espacios de la frase toleran cualquier separador, porque en las bases
-    aparece 'inspeccion tecnica', 'inspeccion  tecnica' y 'inspeccion-tecnica'.
-    """
-    partes = [re.escape(p) for p in normalizar(frase).split() if p]
-    if not partes:
-        return re.compile(r"(?!)")  # patron que nunca calza
-    return re.compile(r"\b" + r"[\s\-_/]+".join(partes) + r"\b")
 
 
 @dataclass(slots=True)
@@ -135,7 +115,7 @@ class PerfilEvaluable:
 
 
 def _buscar(frases: tuple[str, ...], texto_normalizado: str) -> list[str]:
-    return [f for f in frases if _patron_de(f).search(texto_normalizado)]
+    return [f for f in frases if patron_de_frase(f).search(texto_normalizado)]
 
 
 def evaluar_texto(perfil: PerfilEvaluable, texto: str) -> Veredicto:

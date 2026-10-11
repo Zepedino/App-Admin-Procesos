@@ -164,5 +164,15 @@ class Planificador:
     def existe(self, job_id: str) -> bool:
         return job_id in self._jobs
 
+    def tiene_jobs_de(self, id_modulo: str) -> bool:
+        """Si el modulo ya registro sus jobs en este proceso.
+
+        Necesario porque la app se puede construir mas de una vez en el mismo
+        proceso (la consola importa `backend.app`, que ya crea una instancia, y
+        luego llama a crear_app otra vez). Sin esto, el segundo intento moria
+        con "job duplicado".
+        """
+        return any(job_id.startswith(f"{id_modulo}.") for job_id in self._jobs)
+
 
 PLANIFICADOR = Planificador()

@@ -40,6 +40,7 @@ from backend.nucleo.errors import (
     RespuestaInesperada,
 )
 from backend.nucleo.logging import obtener_logger
+from backend.nucleo.texto import normalizar
 from backend.nucleo.tiempo import formato_fecha_mp
 
 log = obtener_logger(__name__)
@@ -86,6 +87,7 @@ class ProveedorMercadoPublico(ProcurementProvider):
         *,
         ttl: timedelta | None,
         usar_cache: bool = True,
+        clave_esperada: str = "Listado",
     ) -> dict[str, Any]:
         """Una llamada a la API, con caché, cuota, reintentos y bitácora.
 
@@ -163,7 +165,12 @@ class ProveedorMercadoPublico(ProcurementProvider):
                     recurso=recurso,
                 ) from exc
 
-            if not isinstance(datos, dict) or "Listado" not in datos:
+            # La validacion sigue siendo estricta, solo que la clave depende
+            # del recurso: licitaciones.json responde "Listado" y
+            # Empresas/BuscarComprador responde "listaEmpresas". Relajarla para
+            # todos habria perdido la deteccion de cambios de contrato, que es
+            # para lo que existe.
+            if not isinstance(datos, dict) or clave_esperada not in datos:
                 # El contrato cambió. Fallar visible, no adivinar (riesgo seccion 9).
                 #
                 # Ante un ticket invalido la API responde HTTP 200 con un cuerpo
@@ -178,12 +185,12 @@ class ProveedorMercadoPublico(ProcurementProvider):
                 self._registrar_llamada(
                     recurso, clave_cache, codigo_http=respuesta.status_code,
                     ok=False,
-                    error=f"falta la clave Listado. {mensaje_api}".strip(),
+                    error=f"falta la clave {clave_esperada}. {mensaje_api}".strip(),
                     intentos=intento,
                 )
                 raise RespuestaInesperada(
                     f"la API respondio: {mensaje_api}" if mensaje_api
-                    else "la respuesta no tiene la forma esperada (falta 'Listado')",
+                    else f"la respuesta no tiene la forma esperada (falta '{clave_esperada}')",
                     recurso=recurso,
                     claves=list(datos)[:10] if isinstance(datos, dict) else type(datos).__name__,
                 )
@@ -295,16 +302,47 @@ class ProveedorMercadoPublico(ProcurementProvider):
         return [LicitacionResumen.desde_api(x) for x in datos.get("Listado") or []]
 
     def licitaciones_por_organismo(self, codigo_organismo: str) -> list[LicitacionResumen]:
-        """Histórico de un organismo (RF-3.5, inteligencia competitiva).
+        """Licitaciones ACTIVAS de un organismo. Base de la vigilancia dirigida.
 
-        El histórico de un organismo cambia poco: TTL largo, ahorra cuota.
+        `estado=activas` no es opcional: verificado contra la API, pedir solo
+        `CodigoOrganismo` devuelve una lista vacía siempre. Con el parámetro,
+        el mismo organismo devuelve sus licitaciones abiertas.
+
+        Es la única forma de garantizar que no se escape nada de un organismo
+        concreto: el listado por fecha no trae el comprador, así que filtrar
+        por "es del SERVIU" en esa pasada es imposible.
+
+        TTL corto: es justo lo que queremos ver cambiar.
         """
         datos = self._pedir(
             "licitaciones.json",
-            {"CodigoOrganismo": codigo_organismo},
-            ttl=timedelta(days=7),
+            {"CodigoOrganismo": codigo_organismo, "estado": "activas"},
+            ttl=timedelta(hours=6),
         )
         return [LicitacionResumen.desde_api(x) for x in datos.get("Listado") or []]
+
+    def buscar_organismos(self, texto: str = "") -> list[dict[str, str]]:
+        """Catálogo de organismos compradores (899 al verificarlo).
+
+        Sirve para encontrar el código de un organismo por su nombre, que es
+        como se marca a quién vigilar. Una llamada trae el catálogo completo,
+        así que se cachea largo: la lista casi no cambia.
+        """
+        datos = self._pedir(
+            "Empresas/BuscarComprador",
+            {},
+            ttl=timedelta(days=30),
+            clave_esperada="listaEmpresas",
+        )
+        lista = datos.get("listaEmpresas") or datos.get("Listado") or []
+        salida = [
+            {"codigo": str(e.get("CodigoEmpresa", "")), "nombre": str(e.get("NombreEmpresa", ""))}
+            for e in lista
+        ]
+        if texto:
+            buscado = normalizar(texto)
+            salida = [o for o in salida if buscado in normalizar(o["nombre"])]
+        return salida
 
     def ordenes_de_compra_por_proveedor(self, rut_proveedor: str) -> list[dict[str, Any]]:
         """RF-6.2: detectar órdenes de compra nuevas sin digitar."""

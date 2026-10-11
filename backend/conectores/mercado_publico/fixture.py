@@ -86,6 +86,20 @@ class ProveedorFixture(ProcurementProvider):
     def licitaciones_por_organismo(self, codigo_organismo: str) -> list[LicitacionResumen]:
         return self._listado(f"licitaciones_organismo_{codigo_organismo}")
 
+    def buscar_organismos(self, texto: str = "") -> list[dict[str, str]]:
+        datos = self._leer("compradores")
+        lista = (datos or {}).get("listaEmpresas") or []
+        salida = [
+            {"codigo": str(e.get("CodigoEmpresa", "")), "nombre": str(e.get("NombreEmpresa", ""))}
+            for e in lista
+        ]
+        if texto:
+            from backend.nucleo.texto import normalizar
+
+            buscado = normalizar(texto)
+            salida = [o for o in salida if buscado in normalizar(o["nombre"])]
+        return salida
+
     def ordenes_de_compra_por_proveedor(self, rut_proveedor: str) -> list[dict[str, Any]]:
         seguro = rut_proveedor.replace(".", "").replace("-", "")
         datos = self._leer(f"ordenes_proveedor_{seguro}")

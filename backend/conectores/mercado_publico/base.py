@@ -428,6 +428,14 @@ class ProcurementProvider(ABC):
         """Histórico de un organismo. Base de la inteligencia competitiva (RF-3.5)."""
 
     @abstractmethod
+    def buscar_organismos(self, texto: str = "") -> list[dict[str, str]]:
+        """Catalogo de organismos compradores, filtrable por nombre.
+
+        Necesario para la vigilancia dirigida: hay que poder encontrar el
+        codigo de un organismo sin conocerlo de memoria.
+        """
+
+    @abstractmethod
     def ordenes_de_compra_por_proveedor(self, rut_proveedor: str) -> list[dict[str, Any]]:
         """Órdenes de compra de la empresa. Cruce automático de RF-6.2."""
 

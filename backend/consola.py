@@ -83,6 +83,22 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         problemas.append(f"no se puede conectar a la base de datos: {exc}")
         print(f"    conexion             FALLA — {exc}")
 
+    try:
+        from backend.nucleo.migraciones import hay_migraciones_pendientes, version_actual
+
+        if hay_migraciones_pendientes():
+            # Sintoma tipico: "no such column". Vale la pena decirlo antes de
+            # que el usuario lo descubra con un error a medio camino.
+            problemas.append(
+                "el esquema de la base esta desactualizado: ejecuta "
+                "'python -m backend.consola init-db' antes de operar"
+            )
+            print(f"    esquema              DESACTUALIZADO (en {version_actual()})")
+        else:
+            print(f"    esquema              al dia ({version_actual()})")
+    except Exception as exc:
+        problemas.append(f"no se pudo verificar el esquema de la base: {exc}")
+
     print("\n  MERCADO PUBLICO")
     proveedor = obtener_proveedor()
     print(f"    proveedor            {proveedor.nombre}")
@@ -397,6 +413,58 @@ def cmd_importar_procedimientos(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_vigilar(args: argparse.Namespace) -> int:
+    """Busca organismos por nombre y los marca para vigilancia dirigida.
+
+    Sin --marcar solo muestra lo encontrado: buscar no deberia cambiar nada.
+    """
+    from backend.modulos.m1_radar.vigilancia import (
+        BUSQUEDAS_SERVIU,
+        descubrir_organismos,
+        marcar_vigilados,
+        organismos_vigilados,
+    )
+
+    _importar_modelos()
+
+    if args.listar:
+        vigilados = organismos_vigilados()
+        print()
+        print(f"  Organismos vigilados: {len(vigilados)}")
+        print()
+        for codigo, nombre in vigilados:
+            print(f"    {codigo:<10} {nombre}")
+        print()
+        return 0
+
+    busquedas = [args.buscar] if args.buscar else list(BUSQUEDAS_SERVIU)
+    encontrados: dict[str, str] = {}
+    for texto in busquedas:
+        for org in descubrir_organismos(texto):
+            encontrados[org["codigo"]] = org["nombre"]
+
+    print()
+    print(f"  Organismos encontrados para {busquedas}: {len(encontrados)}")
+    print()
+    for codigo, nombre in sorted(encontrados.items(), key=lambda x: x[1]):
+        print(f"    {codigo:<10} {nombre}")
+
+    if not args.marcar:
+        print()
+        print("  (solo listado; agrega --marcar para ponerlos en vigilancia)")
+        print()
+        return 0
+
+    cambiados = marcar_vigilados(list(encontrados), nombres=encontrados)
+    print()
+    print(
+        f"  Marcados para vigilancia: {cambiados} nuevos "
+        f"({len(encontrados) - cambiados} ya estaban)"
+    )
+    print()
+    return 0
+
+
 def cmd_run_job(args: argparse.Namespace) -> int:
     """Ejecuta un job a mano. Para reponer lo que fallo de noche."""
     from backend.app import crear_app
@@ -500,6 +568,14 @@ def construir_parser() -> argparse.ArgumentParser:
         "importar-procedimientos", help="carga los PROCESO.md de cada modulo (RF-0.1)"
     )
     p.set_defaults(func=cmd_importar_procedimientos)
+
+    p = sub.add_parser(
+        "vigilar", help="descubre organismos y los marca para vigilancia dirigida"
+    )
+    p.add_argument("--buscar", default="", help="texto a buscar; por defecto, los SERVIU")
+    p.add_argument("--marcar", action="store_true", help="marcarlos (sin esto solo lista)")
+    p.add_argument("--listar", action="store_true", help="muestra los ya vigilados")
+    p.set_defaults(func=cmd_vigilar)
 
     p = sub.add_parser("run-job", help="ejecuta un job a mano (sin argumentos, los lista)")
     p.add_argument("job_id", nargs="?", default="")
