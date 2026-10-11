@@ -21,11 +21,11 @@ No hay datos de ejemplo inventados en ninguna parte del sistema.
 | Contador de cuota | 3 llamadas contadas y persistidas correctamente |
 | Caché | 3 entradas, con TTL según estado |
 | Reintentos y backoff | Probados de verdad: la API devolvió HTTP 429 y el sistema reintentó con backoff y continuó sin perder la sincronización |
-| Operación en vivo | Sincronización real contra la API con ticket: 1.292 y 1.353 licitaciones de dos días hábiles, 2 candidatas guardadas |
+| Operación en vivo | Sincronización real de 7 días hábiles contra la API: ~1.100 licitaciones por día, **19 guardadas** tras el filtro, sin errores |
 | Concurrencia app + consola | Verificada: con la app abierta y un `sync-dia` simultáneo, sin bloqueos de base de datos |
 | Encoding de la API | UTF-8 declarado y real (verificado a nivel de bytes) |
 | Auditoría | Registra acciones de negocio y cambios de columna, con actor e identificador |
-| Tests | 82, todos en verde; `ruff` sin hallazgos |
+| Tests | 83, todos en verde; `ruff` sin hallazgos |
 
 **Hallazgo real durante la verificación:** buscar la subcadena `"ito "` en el
 listado real marca como candidata a *"Suministro señaléticas de Tránsito 2026"*,

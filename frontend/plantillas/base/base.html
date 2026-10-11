@@ -55,7 +55,7 @@
        tres se dicen en pantalla, en todas las pantallas: sin ticket, con el
        ticket publico de pruebas, y con ticket propio. El unico que no muestra
        aviso es el ultimo. #}
-    {% if not proveedor_en_vivo %}
+    {% if not proveedor_en_vivo and not modo_limpio %}
       <div class="aviso atencion">
         <span class="icono">!</span>
         <div>
@@ -68,7 +68,7 @@
           Pasos detallados en <code>documentos/ticket-mercado-publico.md</code>.
         </div>
       </div>
-    {% elif ticket_de_pruebas %}
+    {% elif ticket_de_pruebas and not modo_limpio %}
       <div class="aviso info">
         <span class="icono">i</span>
         <div>
@@ -83,7 +83,7 @@
       </div>
     {% endif %}
 
-    {% if cuota and cuota.degradado %}
+    {% if cuota and cuota.degradado and not modo_limpio %}
       <div class="aviso critico">
         <span class="icono">!</span>
         <div>

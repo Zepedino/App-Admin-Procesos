@@ -86,6 +86,20 @@ publica en `/procesos/`.
 
 ---
 
+## Capturas para presentaciones
+
+Añade `?limpio=1` a cualquier URL y se ocultan los avisos de procedencia:
+
+```
+http://localhost:8000/radar/licitaciones?limpio=1
+```
+
+Solo afecta a lo visual: **los datos mostrados son exactamente los mismos**. Es
+un parámetro de URL y no un ajuste de configuración a propósito — dura lo que
+dura esa página y no se queda activado por olvido.
+
+---
+
 ## Comandos de operación
 
 Solo si necesitas operar o diagnosticar. Para usar la app, basta el lanzador.

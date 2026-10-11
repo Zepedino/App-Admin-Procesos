@@ -115,6 +115,15 @@ def _registrar_contexto_global(app: FastAPI) -> None:
         except Exception:  # pragma: no cover - la UI no puede caerse por esto
             cuota, en_vivo = None, False
 
+        # Modo limpio: oculta los avisos de procedencia para capturas de
+        # pantalla y demos. Solo afecta a lo VISUAL; los datos mostrados son
+        # exactamente los mismos.
+        #
+        # Es un parametro de URL y no un ajuste de configuracion a proposito:
+        # dura lo que dura esa pagina, no se queda activado por olvido, y es
+        # visible en la barra de direcciones de quien lo esta usando.
+        modo_limpio = request.query_params.get("limpio") in {"1", "true", "si"}
+
         return {
             "version": __version__,
             "entorno": config.env,
@@ -122,6 +131,7 @@ def _registrar_contexto_global(app: FastAPI) -> None:
             "proveedor_en_vivo": en_vivo,
             "ticket_de_pruebas": config.mp.es_ticket_de_pruebas,
             "cuota": cuota,
+            "modo_limpio": modo_limpio,
         }
 
     plantillas.env.globals["config"] = config

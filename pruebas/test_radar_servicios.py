@@ -299,3 +299,98 @@ def test_importar_procedimientos_es_idempotente_y_versiona(bd):
         versiones = s.execute(select(VersionProcedimiento)).scalars().all()
         assert len(versiones) == 1
         assert versiones[0].contenido == "contenido antiguo distinto"
+
+
+def test_sincronizar_guarda_todas_las_candidatas_no_solo_la_primera(bd, monkeypatch):
+    """Todas las candidatas de un dia terminan guardadas, no solo la primera.
+
+    Contexto: la transaccion de lectura envolvia el bucle de llamadas HTTP, y
+    dentro de ese bucle el contador de cuota abria su propia transaccion. Con
+    SQLite las dos se esperaban mutuamente, se guardaba la PRIMERA licitacion
+    del dia y el resto moria con "database is locked", habiendo gastado ya la
+    cuota. Se detecto sincronizando dias reales.
+
+    ALCANCE DE ESTE TEST: comprueba la propiedad observable —las cuatro quedan
+    guardadas y sin errores—, NO reproduce el bloqueo en si. Se verifico: al
+    reintroducir una transaccion larga, este test sigue pasando. El deadlock
+    depende de la concurrencia real del fichero SQLite y no se reproduce de
+    forma fiable en proceso. La prueba que lo valido fue la sincronizacion
+    real contra la API, que paso de 1 guardada y 3 errores a 3 y 0.
+
+    Aun asi protege lo que importa: si alguien rompe el guardado por lote, o
+    el deadlock vuelve a dispararse en el entorno de test, esto falla.
+    """
+    from datetime import date
+
+    from backend.conectores.mercado_publico.base import LicitacionDetalle, LicitacionResumen
+    from backend.modulos.m1_radar.models import Licitacion, PerfilInteres
+    from backend.modulos.m1_radar.services import sincronizar_dia
+
+    codigos = ["1111-1-LE26", "2222-2-LE26", "3333-3-LE26", "4444-4-LE26"]
+
+    def _detalle(codigo: str) -> dict:
+        return {
+            "CodigoExterno": codigo,
+            "Nombre": f"Inspeccion tecnica de obra {codigo}",
+            "CodigoEstado": 5,
+            "Estado": "Publicada",
+            "Tipo": "LE",
+            "Moneda": "CLP",
+            "Estimacion": 1,
+            "Comprador": {"CodigoOrganismo": "999", "NombreOrganismo": "SERVIU PRUEBA"},
+            "Fechas": {"FechaCierre": "2026-12-01T15:00:00"},
+            "Items": {"Cantidad": 0, "Listado": []},
+        }
+
+    class ProveedorDoble:
+        nombre = "doble"
+        en_vivo = True
+
+        def licitaciones_del_dia(self, dia):
+            return [
+                LicitacionResumen.desde_api(
+                    {
+                        "CodigoExterno": c,
+                        "Nombre": f"Inspeccion tecnica de obra {c}",
+                        "CodigoEstado": 5,
+                        "FechaCierre": "2026-12-01T15:00:00",
+                    }
+                )
+                for c in codigos
+            ]
+
+        def detalle(self, codigo, *, forzar_refresco=False):
+            # Cada llamada toca el contador de cuota, igual que el real: es
+            # justo la escritura que chocaba con la transaccion externa.
+            CUOTA.reservar(1)
+            return LicitacionDetalle.desde_api(_detalle(codigo))
+
+        def estado_cuota(self):
+            return CUOTA.estado()
+
+    from backend.conectores.mercado_publico.cuota import CUOTA
+
+    with sesion() as s:
+        s.add(
+            PerfilInteres(
+                nombre="prueba",
+                activo=True,
+                palabras_clave=["inspeccion tecnica"],
+                palabras_excluidas=[],
+                umbral_interes=0.1,
+            )
+        )
+
+    monkeypatch.setattr(
+        "backend.modulos.m1_radar.services.obtener_proveedor", lambda: ProveedorDoble()
+    )
+
+    resultado = sincronizar_dia(date(2026, 10, 9))
+
+    assert resultado.candidatas == 4
+    assert resultado.nuevas == 4, f"solo se guardaron {resultado.nuevas} de 4: {resultado.errores}"
+    assert not resultado.errores
+
+    with sesion() as s:
+        guardadas = set(s.execute(select(Licitacion.codigo)).scalars().all())
+    assert guardadas == set(codigos)

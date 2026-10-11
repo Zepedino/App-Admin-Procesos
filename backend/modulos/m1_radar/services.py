@@ -305,6 +305,13 @@ def sincronizar_dia(dia: date, *, limite_detalles: int | None = None) -> Resulta
         raise
     resultado.total_api = len(listado)
 
+    # --- Fase de lectura: transaccion CORTA, sin red dentro -----------------
+    #
+    # Importante: esta transaccion se cierra ANTES del bucle de llamadas HTTP.
+    # Mantenerla abierta durante la red bloqueaba la base: el contador de cuota
+    # (CUOTA.reservar) abre su propia transaccion en cada llamada, y con SQLite
+    # las dos se esperaban mutuamente hasta agotar el timeout. El sintoma era
+    # "database is locked" y solo se guardaba la primera licitacion de cada dia.
     with sesion() as s:
         perfiles = perfiles_activos(s)
         if not perfiles:
@@ -340,44 +347,53 @@ def sincronizar_dia(dia: date, *, limite_detalles: int | None = None) -> Resulta
             (c, v) for c, v in candidatas
             if c in conocidos and _conviene_refrescar(s, c)
         ]
-        cola = pendientes + a_refrescar
-        if limite_detalles is not None:
-            omitidas = max(0, len(cola) - limite_detalles)
-            resultado.omitidas_por_cuota = omitidas
-            cola = cola[:limite_detalles]
 
-        # Paso 2: detalle solo de la cola. Una llamada por licitacion.
-        for codigo, veredicto_nombre in cola:
-            if not CUOTA.hay_disponible(1) and proveedor.en_vivo:
-                resultado.omitidas_por_cuota += 1
-                continue
-            try:
-                detalle = proveedor.detalle(codigo)
-                resultado.detalles_pedidos += 1
-            except CuotaAgotada as exc:
-                resultado.errores.append(str(exc))
-                log.error("cuota agotada durante la sincronizacion", extra={"codigo": codigo})
-                break
-            except Exception as exc:
-                resultado.errores.append(f"{codigo}: {type(exc).__name__}: {exc}")
-                log.exception("no se pudo obtener el detalle", extra={"codigo": codigo})
-                continue
+    cola = pendientes + a_refrescar
+    if limite_detalles is not None:
+        resultado.omitidas_por_cuota = max(0, len(cola) - limite_detalles)
+        cola = cola[:limite_detalles]
 
-            if detalle is None:
-                continue
+    # --- Fase de red: una transaccion corta POR licitacion ------------------
+    #
+    # Guardar una licitacion por transaccion tiene otra ventaja sobre la version
+    # anterior: si la API falla a mitad de la cola, lo ya descargado queda
+    # guardado en vez de perderse con el rollback. La cuota gastada no vuelve.
+    for codigo, veredicto_nombre in cola:
+        if not CUOTA.hay_disponible(1) and proveedor.en_vivo:
+            resultado.omitidas_por_cuota += 1
+            continue
+        try:
+            detalle = proveedor.detalle(codigo)
+            resultado.detalles_pedidos += 1
+        except CuotaAgotada as exc:
+            resultado.errores.append(str(exc))
+            log.error("cuota agotada durante la sincronizacion", extra={"codigo": codigo})
+            break
+        except Exception as exc:
+            resultado.errores.append(f"{codigo}: {type(exc).__name__}: {exc}")
+            log.exception("no se pudo obtener el detalle", extra={"codigo": codigo})
+            continue
 
-            # Paso 3: reevaluar con el detalle completo, que trae items,
-            # categorias UNSPSC, region y monto.
-            veredicto, _ = evaluar_contra_perfiles(perfiles, detalle)
-            if not veredicto.candidata:
-                # El nombre prometia y el detalle no. Se guarda igual: sirve para
-                # medir la precision del filtro y afinar el perfil (RF-1.5).
-                veredicto.palabras_encontradas = veredicto_nombre.palabras_encontradas
+        if detalle is None:
+            continue
 
-            _, es_nueva, cambios = guardar_detalle(s, detalle, veredicto=veredicto)
-            resultado.nuevas += int(es_nueva)
-            resultado.actualizadas += int(not es_nueva)
-            resultado.cambios_detectados += len(cambios)
+        # Paso 3: reevaluar con el detalle completo, que trae items,
+        # categorias UNSPSC, region y monto.
+        veredicto, _ = evaluar_contra_perfiles(perfiles, detalle)
+        if not veredicto.candidata:
+            # El nombre prometia y el detalle no. Se guarda igual: sirve para
+            # medir la precision del filtro y afinar el perfil (RF-1.5).
+            veredicto.palabras_encontradas = veredicto_nombre.palabras_encontradas
+
+        try:
+            with sesion() as s:
+                _, es_nueva, cambios = guardar_detalle(s, detalle, veredicto=veredicto)
+                resultado.nuevas += int(es_nueva)
+                resultado.actualizadas += int(not es_nueva)
+                resultado.cambios_detectados += len(cambios)
+        except Exception as exc:
+            resultado.errores.append(f"{codigo}: al guardar: {type(exc).__name__}: {exc}")
+            log.exception("no se pudo guardar la licitacion", extra={"codigo": codigo})
 
     _registrar_sincronizacion(resultado, ok=not resultado.errores)
     log.info("sincronizacion terminada", extra=resultado.a_dict())
