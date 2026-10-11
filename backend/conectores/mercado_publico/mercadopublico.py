@@ -165,12 +165,25 @@ class ProveedorMercadoPublico(ProcurementProvider):
 
             if not isinstance(datos, dict) or "Listado" not in datos:
                 # El contrato cambió. Fallar visible, no adivinar (riesgo seccion 9).
+                #
+                # Ante un ticket invalido la API responde HTTP 200 con un cuerpo
+                # {"Codigo": ..., "Mensaje": ...} en vez de un error HTTP. Ese
+                # Mensaje dice exactamente que pasa, asi que se propaga en lugar
+                # de tirarlo: es la diferencia entre "algo falló" y "tu ticket
+                # no es válido".
+                mensaje_api = ""
+                if isinstance(datos, dict):
+                    mensaje_api = str(datos.get("Mensaje") or datos.get("mensaje") or "")
+
                 self._registrar_llamada(
                     recurso, clave_cache, codigo_http=respuesta.status_code,
-                    ok=False, error="falta la clave Listado", intentos=intento,
+                    ok=False,
+                    error=f"falta la clave Listado. {mensaje_api}".strip(),
+                    intentos=intento,
                 )
                 raise RespuestaInesperada(
-                    "la respuesta no tiene la forma esperada (falta 'Listado')",
+                    f"la API respondio: {mensaje_api}" if mensaje_api
+                    else "la respuesta no tiene la forma esperada (falta 'Listado')",
                     recurso=recurso,
                     claves=list(datos)[:10] if isinstance(datos, dict) else type(datos).__name__,
                 )

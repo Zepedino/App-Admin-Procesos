@@ -90,8 +90,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     if not cfg.mp.hay_ticket:
         avisos.append(
             "MP_TICKET no configurado: se opera con fixtures. "
-            "Solicitalo con Clave Unica; llega por correo."
+            "Solicitalo con Clave Unica en https://www.chilecompra.cl/api/ ; llega por correo."
         )
+    else:
+        # Nunca mostrar el ticket completo: queda en la pantalla, en capturas y
+        # en los registros de la terminal. Los ultimos 4 caracteres bastan para
+        # distinguir dos tickets sin exponer ninguno.
+        print(f"    ticket               configurado (...{cfg.mp.ticket.strip()[-4:]})")
+
+    if getattr(args, "probar_api", False):
+        problemas.extend(_probar_api_en_vivo(proveedor))
+    elif cfg.mp.hay_ticket:
+        print("    prueba en vivo       omitida (usa --probar-api; gasta 1 llamada)")
     try:
         cuota = proveedor.estado_cuota()
         print(f"    cuota hoy            {cuota.usadas} / {cuota.tope} ({cuota.porcentaje:.1f}%)")
@@ -139,6 +149,49 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print("  Todo en orden.")
     print()
     return 1 if problemas else 0
+
+
+def _probar_api_en_vivo(proveedor) -> list[str]:
+    """Hace UNA llamada real para comprobar que el ticket funciona de verdad.
+
+    Tener el ticket escrito en .env no garantiza nada: puede estar mal copiado,
+    o ChileCompra puede estar caida. Esta es la unica forma de responder
+    "esta operando en vivo?" sin ambiguedad, y cuesta 1 de las 10.000 diarias.
+    """
+    from backend.nucleo.errors import CuotaAgotada, ProveedorNoDisponible, RespuestaInesperada
+    from backend.nucleo.tiempo import ahora_local
+
+    if not proveedor.en_vivo:
+        print("    prueba en vivo       no aplica (proveedor de fixtures)")
+        return []
+
+    # Un dia habil reciente: ayer puede ser domingo y devolver poco, pero
+    # cualquier respuesta valida demuestra que el ticket es aceptado.
+    dia = ahora_local().date() - timedelta(days=2)
+    print(f"    prueba en vivo       consultando el {dia:%d-%m-%Y} ...")
+    try:
+        listado = proveedor.licitaciones_del_dia(dia)
+    except CuotaAgotada as exc:
+        return [f"cuota agotada: {exc}"]
+    except RespuestaInesperada as exc:
+        return [
+            (
+                "la API respondio algo inesperado. Causa mas habitual: el ticket "
+                f"es invalido o esta mal copiado en .env. Detalle: {exc}"
+            )
+        ]
+    except ProveedorNoDisponible as exc:
+        return [
+            (
+                "no se pudo contactar a Mercado Publico tras los reintentos. "
+                f"Puede ser caida del portal (es beta) o falta de red. Detalle: {exc}"
+            )
+        ]
+    except Exception as exc:  # el diagnostico nunca puede reventar: debe diagnosticar
+        return [f"fallo inesperado al probar la API: {type(exc).__name__}: {exc}"]
+
+    print(f"    resultado            OK, {len(listado)} licitaciones recibidas")
+    return []
 
 
 def cmd_init_db(args: argparse.Namespace) -> int:
@@ -410,6 +463,11 @@ def construir_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="comando", required=True)
 
     p = sub.add_parser("doctor", help="verifica entorno, conectividad y cuota")
+    p.add_argument(
+        "--probar-api",
+        action="store_true",
+        help="hace UNA llamada real a Mercado Publico para comprobar que el ticket sirve",
+    )
     p.set_defaults(func=cmd_doctor)
 
     p = sub.add_parser("init-db", help="crea las tablas")

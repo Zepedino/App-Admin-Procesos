@@ -33,6 +33,10 @@ Sin el ticket de Mercado Público el sistema funciona igual: usa respuestas
 **reales** de la API guardadas en `pruebas/fixtures/api/`, y lo advierte en cada
 pantalla. No hay datos inventados en ninguna parte.
 
+Para operar en vivo hace falta el ticket: ver
+[**cómo pedirlo**](documentos/ticket-mercado-publico.md) (es gratis, se solicita
+con Clave Única y llega por correo).
+
 ---
 
 ## Qué hay dentro
@@ -76,6 +80,7 @@ publica en `/procesos/`.
 | [`documentos/ESTADO.md`](documentos/ESTADO.md) | Qué está construido **de verdad** |
 | [`documentos/arquitectura.md`](documentos/arquitectura.md) | Cómo está armado y por qué |
 | [`documentos/decisiones/`](documentos/decisiones/) | Decisiones tomadas, con su motivo |
+| [`documentos/ticket-mercado-publico.md`](documentos/ticket-mercado-publico.md) | **Cómo pedir el ticket de la API** y ponerlo a operar en vivo |
 | [`documentos/despliegue.md`](documentos/despliegue.md) | Publicarlo en internet |
 | [`CLAUDE.md`](CLAUDE.md) | Restricciones no negociables |
 
