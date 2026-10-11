@@ -103,7 +103,43 @@ Son de ChileCompra, no nuestros, y el sistema los hace cumplir solo.
 El consumo del día se ve en la portada de la aplicación y en
 `python -m backend.consola doctor`.
 
-## Si algo falla
+## Si el ticket no llega al correo
+
+Pasó en este proyecto, así que queda documentado.
+
+**Lo primero que hay que entender:** si la dirección que escribiste en el
+formulario **no existía** en ese momento, el correo con el ticket **rebotó**.
+Crear después una casilla con esa misma dirección **no recupera** ese mensaje:
+los correos rebotados no se vuelven a entregar solos. Hay que pedir un reenvío.
+
+La buena noticia es que, si ya creaste la casilla, ahora la dirección sí existe
+y un reenvío sí llegaría.
+
+Qué hacer, en orden:
+
+1. **Repite el proceso completo** en <https://www.chilecompra.cl/api/> con tu
+   Clave Única. Es gratis y toma dos minutos. Como el ticket es *uno por
+   persona*, lo más probable es que el sistema reconozca que ya tienes uno y te
+   lo muestre o lo reenvíe a la casilla registrada — que ahora sí existe.
+2. **Revisa spam y correo no deseado** en las dos casillas: la del formulario y
+   la asociada a tu Clave Única. Los correos automáticos de servicios del Estado
+   caen ahí con frecuencia.
+3. **Si sigue sin llegar, llama a la Mesa de Ayuda** (números vigentes desde
+   abril de 2026):
+   - **600 0061 211** (desde fijo) · **+56 2 2595 0820** (desde móvil)
+   - Lunes a jueves 9:00–18:00, viernes 9:00–17:00
+   - Ten a mano tu **RUT**, la **fecha** en que pediste el ticket y la
+     **dirección de correo** que quedó registrada.
+   - Pide explícitamente: **corregir el correo registrado y reenviar el ticket**.
+
+El Centro de Ayuda (<https://ayuda.mercadopublico.cl/>) no tiene formulario de
+contacto ni correo de soporte: solo publica esos mismos teléfonos. El canal real
+es el telefónico.
+
+> Mientras tanto el trabajo no se detiene: el sistema opera con respuestas reales
+> guardadas y avisa en pantalla que no está en vivo.
+
+## Si algo falla al usarlo
 
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
