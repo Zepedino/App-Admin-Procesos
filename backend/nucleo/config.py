@@ -34,6 +34,11 @@ def _opciones(prefijo: str) -> SettingsConfigDict:
     )
 
 
+#: Ticket de pruebas publicado por ChileCompra en su documentación de la API.
+#: No es un secreto y no es de nadie: por eso puede estar aquí y no en .env.
+TICKET_PRUEBAS_PUBLICO = "F8537A18-6766-4DEF-9E59-426B4FEE2844"
+
+
 class ConfigMercadoPublico(BaseSettings):
     """PRD §4.2 — límites operativos. Respetarlos es requisito, no sugerencia."""
 
@@ -53,6 +58,19 @@ class ConfigMercadoPublico(BaseSettings):
     @property
     def hay_ticket(self) -> bool:
         return bool(self.ticket.strip())
+
+    @property
+    def es_ticket_de_pruebas(self) -> bool:
+        """El ticket que ChileCompra publica abiertamente para pruebas.
+
+        Trae datos reales y en vivo, pero lo usa cualquiera: la cuota diaria es
+        compartida y se puede agotar sin que nosotros hagamos nada. Sirve para
+        desarrollar mientras llega el ticket propio; no sirve para producción.
+
+        Se reconoce para poder DECIRLO en pantalla. Si no, la app mostraría
+        "operando en vivo" y nadie recordaría que la cuota no es suya.
+        """
+        return self.ticket.strip().upper() == TICKET_PRUEBAS_PUBLICO
 
     @property
     def umbral_llamadas(self) -> int:

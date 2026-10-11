@@ -35,7 +35,14 @@ def _crear_motor(config: Config) -> Engine:
                 destino = config.raiz / destino
                 url = f"sqlite+pysqlite:///{destino.as_posix()}"
             destino.parent.mkdir(parents=True, exist_ok=True)
-        kwargs["connect_args"] = {"check_same_thread": False}
+        # timeout: cuanto espera por un lock antes de rendirse.
+        #
+        # Es imprescindible aqui y no un ajuste fino: el caso normal es tener la
+        # aplicacion abierta (con su planificador escribiendo el contador de
+        # cuota) y a la vez ejecutar un comando de consola. Sin esto, SQLite
+        # aborta de inmediato con "database is locked" y la sincronizacion se
+        # cae a media carga, habiendo gastado ya las llamadas a la API.
+        kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30.0}
 
     motor = create_engine(url, **kwargs)
 
@@ -45,6 +52,10 @@ def _crear_motor(config: Config) -> Engine:
             cur = dbapi_conn.cursor()
             cur.execute("PRAGMA foreign_keys=ON")   # las FK NO son opcionales
             cur.execute("PRAGMA journal_mode=WAL")  # lectura concurrente con los jobs
+            # Espera activa por el lock dentro de SQLite, en milisegundos.
+            # Complementa al timeout del driver y cubre los bloqueos que
+            # aparecen a mitad de una transaccion, no solo al conectar.
+            cur.execute("PRAGMA busy_timeout=30000")
             cur.close()
 
     log.info("motor de base de datos creado", extra={"dialecto": motor.dialect.name})

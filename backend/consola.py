@@ -96,7 +96,15 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         # Nunca mostrar el ticket completo: queda en la pantalla, en capturas y
         # en los registros de la terminal. Los ultimos 4 caracteres bastan para
         # distinguir dos tickets sin exponer ninguno.
-        print(f"    ticket               configurado (...{cfg.mp.ticket.strip()[-4:]})")
+        if cfg.mp.es_ticket_de_pruebas:
+            print("    ticket               PUBLICO DE PRUEBAS (cuota compartida)")
+            avisos.append(
+                "estas usando el ticket publico de pruebas de ChileCompra: los datos "
+                "son reales y en vivo, pero la cuota diaria la comparten todos los que "
+                "lo usan. Sirve para desarrollar, no para produccion."
+            )
+        else:
+            print(f"    ticket               configurado (...{cfg.mp.ticket.strip()[-4:]})")
 
     if getattr(args, "probar_api", False):
         problemas.extend(_probar_api_en_vivo(proveedor))

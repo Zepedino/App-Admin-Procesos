@@ -227,3 +227,51 @@ def test_exigir_permiso_corta_la_operacion():
 
     with pytest.raises(PermisoDenegado):
         exigir(Rol.ITO, Permiso.VER_REMUNERACIONES)
+
+
+# --- Honestidad sobre el origen de los datos ---------------------------------
+
+
+def test_se_reconoce_el_ticket_publico_de_pruebas(monkeypatch):
+    """El ticket publico trae datos reales, pero con cuota compartida.
+
+    Si el sistema no lo distinguiera de un ticket propio, la app diria
+    "operando en vivo" y nadie recordaria que la cuota no es suya, hasta que
+    se agotara en mitad de una sincronizacion.
+    """
+    from backend.nucleo.config import TICKET_PRUEBAS_PUBLICO, Config, obtener_config
+
+    monkeypatch.setenv("MP_TICKET", TICKET_PRUEBAS_PUBLICO)
+    obtener_config.cache_clear()
+    try:
+        cfg = Config()
+        assert cfg.mp.hay_ticket
+        assert cfg.mp.es_ticket_de_pruebas
+    finally:
+        obtener_config.cache_clear()
+
+
+def test_un_ticket_propio_no_se_confunde_con_el_de_pruebas(monkeypatch):
+    from backend.nucleo.config import Config, obtener_config
+
+    monkeypatch.setenv("MP_TICKET", "11111111-2222-3333-4444-555555555555")
+    obtener_config.cache_clear()
+    try:
+        cfg = Config()
+        assert cfg.mp.hay_ticket
+        assert not cfg.mp.es_ticket_de_pruebas
+    finally:
+        obtener_config.cache_clear()
+
+
+def test_sin_ticket_no_hay_falso_positivo(monkeypatch):
+    from backend.nucleo.config import Config, obtener_config
+
+    monkeypatch.setenv("MP_TICKET", "")
+    obtener_config.cache_clear()
+    try:
+        cfg = Config()
+        assert not cfg.mp.hay_ticket
+        assert not cfg.mp.es_ticket_de_pruebas
+    finally:
+        obtener_config.cache_clear()

@@ -51,8 +51,10 @@
 
   <main class="principal">
 
-    {# Honestidad sobre el origen de los datos. Si no viene de la API en vivo,
-       se dice aqui y en todas las pantallas. #}
+    {# Honestidad sobre el origen de los datos. Hay tres estados posibles y los
+       tres se dicen en pantalla, en todas las pantallas: sin ticket, con el
+       ticket publico de pruebas, y con ticket propio. El unico que no muestra
+       aviso es el ultimo. #}
     {% if not proveedor_en_vivo %}
       <div class="aviso atencion">
         <span class="icono">!</span>
@@ -64,6 +66,19 @@
           <a href="https://www.chilecompra.cl/api/" target="_blank" rel="noopener noreferrer">chilecompra.cl/api</a>,
           cárgalo en <code>.env</code> y reinicia.
           Pasos detallados en <code>documentos/ticket-mercado-publico.md</code>.
+        </div>
+      </div>
+    {% elif ticket_de_pruebas %}
+      <div class="aviso info">
+        <span class="icono">i</span>
+        <div>
+          <strong>Datos reales en vivo, con el ticket público de pruebas.</strong>
+          Lo que ves viene de la API de Mercado Público ahora mismo, pero ese ticket
+          lo publica ChileCompra para pruebas y lo usa cualquiera:
+          <strong>la cuota diaria es compartida</strong> y puede agotarse sin que
+          hagamos nada. Sirve para desarrollar, no para producción.
+          Cuando llegue tu ticket propio, reemplaza <code>MP_TICKET</code> en
+          <code>.env</code> y este aviso desaparece.
         </div>
       </div>
     {% endif %}

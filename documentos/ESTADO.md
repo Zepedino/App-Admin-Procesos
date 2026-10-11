@@ -1,6 +1,6 @@
 # Estado real de construcción
 
-**Actualizado:** 2026-09-08 · **Versión:** 0.1.0
+**Actualizado:** 2026-10-11 · **Versión:** 0.1.0
 
 Este documento dice qué está construido **de verdad**, qué es esqueleto y qué no
 existe. Mantenerlo honesto es obligatorio: es lo que evita prometer lo que no está.
@@ -20,10 +20,12 @@ No hay datos de ejemplo inventados en ninguna parte del sistema.
 | Filtro del perfil sobre datos reales | 1.214 → 3 candidatas; 1.162 → 1 candidata |
 | Contador de cuota | 3 llamadas contadas y persistidas correctamente |
 | Caché | 3 entradas, con TTL según estado |
-| Reintentos y backoff | Probados de verdad: la API devolvió HTTP 429 y el sistema reintentó 3 veces y falló de forma visible |
+| Reintentos y backoff | Probados de verdad: la API devolvió HTTP 429 y el sistema reintentó con backoff y continuó sin perder la sincronización |
+| Operación en vivo | Sincronización real contra la API con ticket: 1.292 y 1.353 licitaciones de dos días hábiles, 2 candidatas guardadas |
+| Concurrencia app + consola | Verificada: con la app abierta y un `sync-dia` simultáneo, sin bloqueos de base de datos |
 | Encoding de la API | UTF-8 declarado y real (verificado a nivel de bytes) |
 | Auditoría | Registra acciones de negocio y cambios de columna, con actor e identificador |
-| Tests | 79, todos en verde; `ruff` sin hallazgos |
+| Tests | 82, todos en verde; `ruff` sin hallazgos |
 
 **Hallazgo real durante la verificación:** buscar la subcadena `"ito "` en el
 listado real marca como candidata a *"Suministro señaléticas de Tránsito 2026"*,

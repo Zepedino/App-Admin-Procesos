@@ -120,6 +120,7 @@ def _registrar_contexto_global(app: FastAPI) -> None:
             "entorno": config.env,
             "ruta_actual": request.url.path,
             "proveedor_en_vivo": en_vivo,
+            "ticket_de_pruebas": config.mp.es_ticket_de_pruebas,
             "cuota": cuota,
         }
 
