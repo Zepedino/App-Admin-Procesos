@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, Form, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -274,8 +274,20 @@ def sincronizaciones(request: Request, s: Session = Depends(dependencia_sesion))
 
 
 @router.post("/sincronizar")
-def sincronizar_manual(dia: str = Form("")) -> RedirectResponse:
-    """Sincronizacion a peticion. Util para reponer un dia que fallo."""
+def sincronizar_manual(
+    tareas: BackgroundTasks, dia: str = Form("")
+) -> RedirectResponse:
+    """Sincronizacion a peticion. Util para reponer un dia que fallo.
+
+    Corre en SEGUNDO PLANO y redirige de inmediato. Antes se ejecutaba dentro
+    de la peticion, y como el adaptador espera 3 segundos entre llamadas para
+    no gatillar el HTTP 429, un dia con varias candidatas dejaba el navegador
+    cargando mas de un minuto sin dar senal de vida. Parecia que la aplicacion
+    se habia colgado, y lo normal entonces es recargar la pagina y disparar una
+    segunda sincronizacion encima de la primera.
+
+    El resultado aparece en /radar/sincronizaciones cuando termina.
+    """
     objetivo: date
     if dia.strip():
         try:
@@ -284,8 +296,19 @@ def sincronizar_manual(dia: str = Form("")) -> RedirectResponse:
             objetivo = parsear_fecha_mp(dia.strip())
     else:
         objetivo = ahora_local().date() - timedelta(days=1)
-    services.sincronizar_dia(objetivo, limite_detalles=50)
-    return RedirectResponse("/radar/sincronizaciones", status_code=303)
+
+    tareas.add_task(_sincronizar_en_segundo_plano, objetivo)
+    return RedirectResponse("/radar/sincronizaciones?lanzada=1", status_code=303)
+
+
+def _sincronizar_en_segundo_plano(objetivo: date) -> None:
+    """Envoltorio con bitacora: una tarea de fondo que falla en silencio es
+    peor que una lenta (PRD seccion 6)."""
+    try:
+        resultado = services.sincronizar_dia(objetivo, limite_detalles=50)
+        log.info("sincronizacion manual terminada", extra=resultado.a_dict())
+    except Exception:
+        log.exception("sincronizacion manual fallo", extra={"dia": objetivo.isoformat()})
 
 
 @router.post("/cambios/{cambio_id}/visto")

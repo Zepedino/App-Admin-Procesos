@@ -223,26 +223,42 @@ def crear_env_si_falta() -> None:
 
 
 def preparar_base_de_datos() -> None:
-    """Crea las tablas y los datos iniciales si la base esta vacia.
+    """Deja la base lista: esquema al dia y, si esta vacia, datos para mirar.
 
     Es idempotente: ejecutarlo mil veces no duplica nada.
     """
-    from backend.app import _importar_modelos
-    from backend.consola import _cargar_semilla
-    from backend.nucleo.db import obtener_motor
-    from backend.nucleo.modelo_base import Base
-
-    _importar_modelos()
-    motor = obtener_motor()
     from sqlalchemy import inspect
 
-    ya_existia = bool(inspect(motor).get_table_names())
-    Base.metadata.create_all(motor)
+    from backend.app import _importar_modelos
+    from backend.consola import _cargar_semilla
+    from backend.modulos.m1_radar.demo import importar as importar_demo
+    from backend.nucleo.db import obtener_motor
+    from backend.nucleo.migraciones import aplicar_migraciones
+
+    _importar_modelos()
+    ya_existia = bool(inspect(obtener_motor()).get_table_names())
 
     if not ya_existia:
-        paso("Creando la base de datos y los datos iniciales ...")
+        paso("Creando la base de datos ...")
+
+    # Alembic, NO create_all. create_all crea tablas que faltan pero no agrega
+    # columnas a las que ya existen: tras cualquier cambio de modelo, la base
+    # se quedaba atras en silencio hasta fallar con "no such column".
+    aplicar_migraciones()
+
+    if not ya_existia:
         _cargar_semilla()
         ok("Base de datos lista")
+
+        # Datos reales de demostracion, para que la primera pantalla tenga
+        # contenido sin ticket y sin esperar a una sincronizacion. Sin esto,
+        # quien clona el repositorio abre la aplicacion y la ve vacia.
+        paso("Cargando datos de ejemplo ...")
+        resultado = importar_demo(solo_si_vacio=True)
+        if resultado["licitaciones"]:
+            ok(f"{resultado['licitaciones']} licitaciones reales cargadas")
+        else:
+            aviso("No habia datos de ejemplo que cargar.")
 
 
 def importar_procedimientos() -> None:

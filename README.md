@@ -86,6 +86,20 @@ publica en `/procesos/`.
 
 ---
 
+## Informe de avance para presentar
+
+Un solo archivo HTML, autocontenido, con los datos ya dentro y los enlaces a
+Mercado Público listos. Se abre con doble clic; no necesita la aplicación
+levantada, ni ticket, ni internet (salvo para seguir los enlaces).
+
+```bash
+python -m backend.consola informe
+```
+
+Queda en `informe/avance.html`. Se regenera cuando haya más datos.
+
+---
+
 ## Capturas para presentaciones
 
 Añade `?limpio=1` a cualquier URL y se ocultan los avisos de procedencia:

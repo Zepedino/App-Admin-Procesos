@@ -6,6 +6,7 @@
 *.key
 
 # Datos: base de datos y archivos descargados. Se recrean solos.
+# OJO: datos/ (con barra) no alcanza a datos_demo/, que SI se versiona.
 datos/
 *.sqlite3
 *.db

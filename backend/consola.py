@@ -478,6 +478,47 @@ def cmd_vigilar(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_demo(args: argparse.Namespace) -> int:
+    """Exporta o carga los datos de demostracion versionados."""
+    from backend.modulos.m1_radar import demo
+
+    _importar_modelos()
+
+    if args.exportar:
+        r = demo.exportar(limite=args.limite)
+        print()
+        print(f"  Exportado a {r['archivo']}")
+        print(f"    licitaciones {r['licitaciones']}   organismos {r['organismos']}"
+              f"   perfiles {r['perfiles']}   ({r['kb']} KB)")
+        print()
+        return 0
+
+    r = demo.importar(solo_si_vacio=not args.forzar)
+    print()
+    if r["omitido"]:
+        print("  Omitido: ya hay licitaciones cargadas (usa --forzar para cargar igual)")
+    else:
+        print(f"  Cargado: {r['licitaciones']} licitaciones, {r['organismos']} organismos, "
+              f"{r['perfiles']} perfiles")
+    print()
+    return 0
+
+
+def cmd_informe(args: argparse.Namespace) -> int:
+    """Genera el informe de avance en HTML, autocontenido."""
+    from backend.modulos.m1_radar import informe_html
+
+    _importar_modelos()
+    destino = Path(args.salida) if args.salida else (
+        obtener_config().raiz / "informe" / "avance.html"
+    )
+    r = informe_html.exportar(destino, contenido_solo=args.fragmento)
+    print()
+    print(f"  Informe generado: {r['archivo']}  ({r['kb']} KB)")
+    print()
+    return 0
+
+
 def cmd_run_job(args: argparse.Namespace) -> int:
     """Ejecuta un job a mano. Para reponer lo que fallo de noche."""
     from backend.app import crear_app
@@ -589,6 +630,20 @@ def construir_parser() -> argparse.ArgumentParser:
     p.add_argument("--marcar", action="store_true", help="marcarlos (sin esto solo lista)")
     p.add_argument("--listar", action="store_true", help="muestra los ya vigilados")
     p.set_defaults(func=cmd_vigilar)
+
+    p = sub.add_parser(
+        "demo", help="carga datos de demostracion (o los exporta con --exportar)"
+    )
+    p.add_argument("--exportar", action="store_true", help="genera el archivo desde esta base")
+    p.add_argument("--limite", type=int, default=None, help="maximo de licitaciones a exportar")
+    p.add_argument("--forzar", action="store_true", help="cargar aunque ya haya datos")
+    p.set_defaults(func=cmd_demo)
+
+    p = sub.add_parser("informe", help="genera el informe de avance en HTML")
+    p.add_argument("--salida", default="", help="ruta del archivo a escribir")
+    p.add_argument("--fragmento", action="store_true",
+                   help="sin <html>/<head>, para publicarlo como Artifact")
+    p.set_defaults(func=cmd_informe)
 
     p = sub.add_parser("run-job", help="ejecuta un job a mano (sin argumentos, los lista)")
     p.add_argument("job_id", nargs="?", default="")

@@ -6,6 +6,17 @@
   </form>
 {% endblock %}
 {% block contenido %}
+  {% if request.query_params.get('lanzada') %}
+    <div class="aviso info">
+      <span class="icono">i</span>
+      <div>
+        <strong>Sincronización lanzada.</strong> Corre en segundo plano porque
+        espera 3 segundos entre llamadas para no saturar la API: un día con
+        varias candidatas puede tardar un par de minutos.
+        <strong>Recarga esta página</strong> en un rato para ver el resultado en la tabla.
+      </div>
+    </div>
+  {% endif %}
 
   {% if huecos %}
     <div class="aviso atencion">
