@@ -471,3 +471,34 @@ def test_organismo_normal_no_se_descarta(bd):
         ).scalar_one()
         assert lic.estado_seguimiento == EstadoSeguimiento.NUEVA
         assert lic.motivo_descarte is None
+
+
+def test_url_a_mercado_publico_usa_el_parametro_que_el_portal_acepta():
+    """El enlace a la ficha publica se construye con `idlicitacion`.
+
+    VERIFICADO contra el portal con tres licitaciones reales: esa URL responde
+    302 y redirige a la ficha, cuya direccion final lleva un token `qs=` opaco
+    generado por el servidor (por ejemplo `qs=uPgLLFloS0+fwfa8i+VW/A==`).
+
+    Ese token NO es derivable del codigo, asi que intentar construir la URL
+    final daria enlaces rotos. Este test existe para que nadie "mejore" esto
+    cambiandolo por la URL con `qs` que ve en la barra del navegador.
+    """
+    from backend.modulos.m1_radar.models import Licitacion
+
+    lic = Licitacion(codigo="638-21-LR26", nombre="x")
+    url = lic.url_mercado_publico
+
+    assert url.startswith("https://www.mercadopublico.cl/")
+    assert "idlicitacion=638-21-LR26" in url
+    assert "qs=" not in url, "el token qs lo genera el portal; no se construye aqui"
+
+
+def test_url_cambia_con_el_codigo():
+    from backend.modulos.m1_radar.models import Licitacion
+
+    a = Licitacion(codigo="638-21-LR26", nombre="x").url_mercado_publico
+    b = Licitacion(codigo="704093-137-LP26", nombre="y").url_mercado_publico
+    assert a != b
+    assert a.endswith("638-21-LR26")
+    assert b.endswith("704093-137-LP26")

@@ -97,7 +97,11 @@
           <tbody>
             {% for l in nuevas %}
               <tr>
-                <td class="ajustado mono"><a href="/radar/licitaciones/{{ l.codigo }}">{{ l.codigo }}</a></td>
+                <td class="ajustado mono">
+                  <a href="/radar/licitaciones/{{ l.codigo }}">{{ l.codigo }}</a>
+                  <a href="{{ l.url_mercado_publico }}" target="_blank" rel="noopener noreferrer"
+                     class="enlace-externo" title="Abrir la ficha en Mercado Publico">&#8599;</a>
+                </td>
                 <td>
                   {{ l.nombre|truncate(80) }}
                   {% if l.coincidencias %}
@@ -136,7 +140,11 @@
           <tbody>
             {% for l in cierran_pronto %}
               <tr>
-                <td class="ajustado mono"><a href="/radar/licitaciones/{{ l.codigo }}">{{ l.codigo }}</a></td>
+                <td class="ajustado mono">
+                  <a href="/radar/licitaciones/{{ l.codigo }}">{{ l.codigo }}</a>
+                  <a href="{{ l.url_mercado_publico }}" target="_blank" rel="noopener noreferrer"
+                     class="enlace-externo" title="Abrir la ficha en Mercado Publico">&#8599;</a>
+                </td>
                 <td>{{ l.nombre|truncate(70) }}</td>
                 <td><span class="etiqueta">{{ l.estado_seguimiento }}</span></td>
                 <td class="ajustado">

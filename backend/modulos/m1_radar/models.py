@@ -231,6 +231,25 @@ class Licitacion(ModeloBase, Auditable):
     )
 
     @property
+    def url_mercado_publico(self) -> str:
+        """Enlace directo a la ficha publica en Mercado Publico.
+
+        VERIFICADO contra el portal con tres licitaciones distintas: el
+        parametro `idlicitacion` acepta el codigo externo y el portal redirige
+        solo (302) a la ficha real, cuya URL lleva un token `qs=` opaco que
+        genera el servidor y no se puede construir desde aqui.
+
+        Por eso se usa esta forma y no la URL final: el token no es derivable
+        del codigo. Intentar fabricarlo daria enlaces rotos.
+
+        No requiere sesion iniciada: es la ficha publica.
+        """
+        return (
+            "https://www.mercadopublico.cl/Procurement/Modules/RFB/"
+            f"DetailsAcquisition.aspx?idlicitacion={self.codigo}"
+        )
+
+    @property
     def esta_abierta(self) -> bool:
         return self.codigo_estado == 5
 

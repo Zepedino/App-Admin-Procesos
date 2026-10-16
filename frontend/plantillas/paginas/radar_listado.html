@@ -32,7 +32,11 @@
           <tbody>
             {% for l in licitaciones %}
               <tr>
-                <td class="ajustado mono"><a href="/radar/licitaciones/{{ l.codigo }}">{{ l.codigo }}</a></td>
+                <td class="ajustado mono">
+                  <a href="/radar/licitaciones/{{ l.codigo }}">{{ l.codigo }}</a>
+                  <a href="{{ l.url_mercado_publico }}" target="_blank" rel="noopener noreferrer"
+                     class="enlace-externo" title="Abrir la ficha en Mercado Publico">&#8599;</a>
+                </td>
                 <td>{{ l.nombre|truncate(75) }}</td>
                 <td class="pequeno">{{ l.nombre_organismo|default('—', true)|truncate(35) }}</td>
                 <td class="ajustado">{{ l.tipo|default('—', true) }}</td>

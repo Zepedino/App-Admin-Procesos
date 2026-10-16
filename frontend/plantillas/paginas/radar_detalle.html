@@ -7,7 +7,7 @@
 
 {% block acciones %}
   <a class="boton" target="_blank" rel="noopener"
-     href="https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion={{ licitacion.codigo }}">
+     href="{{ licitacion.url_mercado_publico }}">
     Ver ficha en el portal
   </a>
   {% if licitacion.estado_seguimiento != 'interesa' %}
