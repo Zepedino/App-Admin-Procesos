@@ -512,7 +512,12 @@ def cmd_informe(args: argparse.Namespace) -> int:
     destino = Path(args.salida) if args.salida else (
         obtener_config().raiz / "informe" / "avance.html"
     )
-    r = informe_html.exportar(destino, contenido_solo=args.fragmento)
+    if args.app:
+        from backend.modulos.m1_radar import instantanea_html
+
+        r = instantanea_html.exportar(destino, contenido_solo=args.fragmento)
+    else:
+        r = informe_html.exportar(destino, contenido_solo=args.fragmento)
     print()
     print(f"  Informe generado: {r['archivo']}  ({r['kb']} KB)")
     print()
@@ -643,6 +648,8 @@ def construir_parser() -> argparse.ArgumentParser:
     p.add_argument("--salida", default="", help="ruta del archivo a escribir")
     p.add_argument("--fragmento", action="store_true",
                    help="sin <html>/<head>, para publicarlo como Artifact")
+    p.add_argument("--app", action="store_true",
+                   help="replica navegable de la aplicacion en vez del resumen")
     p.set_defaults(func=cmd_informe)
 
     p = sub.add_parser("run-job", help="ejecuta un job a mano (sin argumentos, los lista)")
