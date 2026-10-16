@@ -58,9 +58,13 @@
       <h2>Lo primero que hay que resolver</h2>
       <p class="pequeno tenue">Preguntas abiertas del PRD que bloquean módulos completos.</p>
       <ul class="linea-tiempo">
-        <li><strong>Ticket de Mercado Público</strong> — se solicita con Clave Única y demora.
-          Sin él el sistema opera con respuestas guardadas.
-          <div class="cuando">bloquea: operación en vivo</div></li>
+        {# Un bloqueador resuelto que sigue en pantalla es ruido, y enseña a no
+           creerle a esta lista. Desaparece solo cuando deja de aplicar. #}
+        {% if not proveedor_en_vivo %}
+          <li><strong>Ticket de Mercado Público</strong> — se solicita con Clave Única y demora.
+            Sin él el sistema opera con respuestas guardadas.
+            <div class="cuando">bloquea: operación en vivo</div></li>
+        {% endif %}
         <li class="critico"><strong>Criterios reales de postulación de Daniela</strong> —
           «la conversación más valiosa del proyecto» según el PRD.
           <div class="cuando">bloquea: M3 scoring go/no-go</div></li>
