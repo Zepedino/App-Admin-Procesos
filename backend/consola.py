@@ -254,21 +254,34 @@ def _cargar_semilla() -> dict:
         if not s.execute(select(PerfilInteres)).first():
             s.add(
                 PerfilInteres(
-                    nombre="ITO y supervision de obras (borrador)",
+                    nombre="ITO, FTO y supervision de obras (borrador)",
                     activo=True,
                     descripcion=(
                         "Punto de partida tomado de los ejemplos del PRD RF-1.2. "
                         "AJUSTAR con Daniela: pregunta abierta 5."
                     ),
                     palabras_clave=[
+                        # El SERVIU llama FTO a lo que el PRD llamaba ITO.
+                        # Medido: sin estas dos primeras, el radar capturaba
+                        # CERO licitaciones del cliente principal.
+                        "fiscalizacion tecnica de obras",
+                        "fiscalizacion tecnica",
+                        "FTO",
+                        "AFTO",
                         "inspeccion tecnica",
                         "inspeccion tecnica de obra",
                         "ITO",
                         "asesoria a la inspeccion",
+                        "asesoria tecnica de obra",
                         "supervision de obras",
-                        "asesoria tecnica",
+                        "revision tecnica de obra",
                     ],
-                    palabras_excluidas=["suministro", "arriendo", "provision de", "adquisicion"],
+                    # "asesoria tecnica" a secas traia INDAP (agropecuario) y
+                    # SERNATUR (turismo): se reemplazo por la version con obra.
+                    palabras_excluidas=[
+                        "suministro", "arriendo", "provision de", "adquisicion",
+                        "aseo", "seguros", "transporte de", "alarma", "luminarias",
+                    ],
                     categorias_unspsc=["7213", "8110", "8010"],
                     regiones=[],
                     tipos_licitacion=[],

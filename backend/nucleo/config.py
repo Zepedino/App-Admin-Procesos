@@ -52,6 +52,19 @@ class ConfigMercadoPublico(BaseSettings):
     ventana_batch_fin: int = 7
     timeout_seg: float = 45.0
     reintentos: int = 3
+    #: Segundos minimos entre dos llamadas consecutivas.
+    #:
+    #: MEDIDO, no estimado. Seis llamadas seguidas con ticket propio:
+    #:     0,6 s -> 2 de 6 con HTTP 429
+    #:     1,5 s -> 1 de 6
+    #:     3,0 s -> 0 de 6
+    #: Sin espaciar, el 85 % de las llamadas necesitaba reintento.
+    #:
+    #: El PRD seccion 4.2 avisa que ChileCompra "puede restringir segun volumen
+    #: desde una misma IP". Forzar el limite y resolverlo a reintentos gasta
+    #: cuota, tarda mas por el backoff, e insiste sobre un servicio que acaba
+    #: de pedir que bajemos el ritmo.
+    delay_entre_llamadas_seg: float = 3.0
     cache_ttl_activas_min: int = 240
     cache_ttl_cerradas_dias: int = 30
 

@@ -66,6 +66,7 @@ class ProveedorMercadoPublico(ProcurementProvider):
                 "MP_TICKET no está configurado. Solicítalo con Clave Única; llega por correo."
             )
         self._cfg = cfg.mp
+        self._ultima_llamada: float = 0.0
         self._cliente = cliente or httpx.Client(
             base_url=self._cfg.base_url,
             timeout=self._cfg.timeout_seg,
@@ -105,6 +106,7 @@ class ProveedorMercadoPublico(ProcurementProvider):
         # La cuota se reserva ANTES de llamar: una llamada fallida también
         # consumió cuota del lado de ChileCompra.
         CUOTA.reservar(1)
+        self._esperar_turno()
 
         parametros_completos = {**parametros, "ticket": self._cfg.ticket}
         ultimo_error: Exception | None = None
@@ -223,6 +225,21 @@ class ProveedorMercadoPublico(ProcurementProvider):
             recurso=recurso,
             causa=str(ultimo_error),
         )
+
+    def _esperar_turno(self) -> None:
+        """Espacia las llamadas para no gatillar el limite de frecuencia.
+
+        Barato comparado con la alternativa: cada 429 cuesta una llamada de
+        cuota mas 2 segundos de backoff, y encima insiste sobre un servicio que
+        acaba de pedir que bajemos el ritmo.
+        """
+        minimo = self._cfg.delay_entre_llamadas_seg
+        if minimo <= 0:
+            return
+        transcurrido = time.monotonic() - self._ultima_llamada
+        if transcurrido < minimo:
+            time.sleep(minimo - transcurrido)
+        self._ultima_llamada = time.monotonic()
 
     def _esperar_backoff(self, intento: int) -> None:
         """Backoff exponencial simple: 2s, 4s, 8s. Sin jitter porque no hay concurrencia."""

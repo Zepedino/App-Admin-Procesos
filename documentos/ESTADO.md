@@ -28,6 +28,8 @@ No hay datos de ejemplo inventados en ninguna parte del sistema.
 | Encoding de la API | UTF-8 declarado y real (verificado a nivel de bytes) |
 | Auditoría | Registra acciones de negocio y cambios de columna, con actor e identificador |
 | Tests | 85, todos en verde; `ruff` sin hallazgos |
+| **Ticket propio** | **Operativo.** Verificado en vivo: 1.236 licitaciones, cuota propia, sin avisos |
+| Límite de frecuencia | Medido: 0,6 s → 2/6 con HTTP 429; 1,5 s → 1/6; **3,0 s → 0/6**. Ese es el intervalo configurado |
 
 **Hallazgo real durante la verificación:** buscar la subcadena `"ito "` en el
 listado real marca como candidata a *"Suministro señaléticas de Tránsito 2026"*,
