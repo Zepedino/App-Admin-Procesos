@@ -31,3 +31,8 @@ Thumbs.db
 # NOTA: .vscode/ SI se versiona. Lleva la configuracion del boton Run y del
 # interprete, que es justo lo que evita que alguien tenga que pelear con la
 # terminal para levantar la aplicacion.
+
+# Informes generados: son salida del comando `consola informe`, no fuente.
+# Se regeneran con un comando, y versionarlos llenaría el historial de
+# archivos de 400 KB que cambian entero en cada corrida.
+informe/

@@ -4,6 +4,12 @@ Consultora ITO / SERVIU. Todo el ciclo de vida de una licitación en una sola
 aplicación: desde que aparece en el radar de Mercado Público hasta que el
 contrato se cierra con su rentabilidad real calculada.
 
+> **¿Retomando el proyecto, o llegando por primera vez?**
+> Empieza por **[`documentos/CONTEXTO.md`](documentos/CONTEXTO.md)**: el porqué
+> de cada decisión, los hallazgos que cambiaron el diseño, los bugs corregidos y
+> qué bloquea el avance. Está escrito para que alguien continúe sin haber estado
+> presente.
+
 ---
 
 ## Cómo abrir la aplicación
@@ -76,6 +82,7 @@ publica en `/procesos/`.
 
 | Documento | Para qué |
 |---|---|
+| [`documentos/CONTEXTO.md`](documentos/CONTEXTO.md) | **Empieza aquí.** Todo el contexto para continuar el trabajo |
 | [`documentos/PRD-v1-sistema-licitaciones.md`](documentos/PRD-v1-sistema-licitaciones.md) | Qué debe hacer el sistema |
 | [`documentos/ESTADO.md`](documentos/ESTADO.md) | Qué está construido **de verdad** |
 | [`documentos/arquitectura.md`](documentos/arquitectura.md) | Cómo está armado y por qué |
@@ -86,17 +93,17 @@ publica en `/procesos/`.
 
 ---
 
-## Informe de avance para presentar
+## Instantánea para presentaciones
 
-Un solo archivo HTML, autocontenido, con los datos ya dentro y los enlaces a
-Mercado Público listos. Se abre con doble clic; no necesita la aplicación
-levantada, ni ticket, ni internet (salvo para seguir los enlaces).
+Copia estática navegable de la aplicación, en un archivo que se abre con doble
+clic. Se usó para mostrar el prototipo; se regenera cuando haga falta.
 
 ```bash
-python -m backend.consola informe
+python -m backend.consola informe --app     # réplica navegable de la app
+python -m backend.consola informe           # resumen de una página
 ```
 
-Queda en `informe/avance.html`. Se regenera cuando haya más datos.
+Los archivos generados no se versionan: son salida, no fuente.
 
 ---
 
