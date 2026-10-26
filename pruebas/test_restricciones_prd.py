@@ -275,3 +275,70 @@ def test_sin_ticket_no_hay_falso_positivo(monkeypatch):
         assert not cfg.mp.es_ticket_de_pruebas
     finally:
         obtener_config.cache_clear()
+
+
+# --- Minimizacion de datos personales (PRD seccion 6) ------------------------
+
+
+def test_los_datos_de_demo_no_llevan_personas():
+    """El archivo versionado no puede acumular datos de personas.
+
+    La API los esparce en mas de un sitio: nombre y cargo del funcionario a
+    cargo, y el RUT del proveedor adjudicado, que a veces es una persona
+    natural. Al exportar por primera vez salieron 66 nombres y dos RUT en rango
+    de persona; este test existe para que no vuelvan.
+
+    El RUT de la unidad compradora SI se conserva: identifica al organismo del
+    Estado (60.x, 61.x), no a una persona.
+    """
+    import json
+    import re
+
+    from backend.modulos.m1_radar.demo import ruta_demo
+
+    archivo = ruta_demo()
+    if not archivo.exists():
+        pytest.skip("no hay datos de demo generados")
+
+    datos = json.loads(archivo.read_text(encoding="utf-8"))
+    texto = json.dumps(datos, ensure_ascii=False)
+
+    ruts = set(re.findall(r"\b\d{1,2}\.\d{3}\.\d{3}-[\dkK]\b", texto))
+    de_persona = [r for r in ruts if int(r.split(".")[0]) < 30]
+    assert not de_persona, f"RUT en rango de persona natural: {de_persona}"
+
+    nombres = {
+        (lic["json_crudo"].get("Comprador") or {}).get("NombreUsuario", "")
+        for lic in datos["licitaciones"]
+    }
+    assert nombres <= {""}, f"nombres de funcionarios en el archivo: {nombres - {''}}"
+
+    # La contracara: lo institucional debe seguir ahi, o la demo no sirve.
+    organismos = {
+        (lic["json_crudo"].get("Comprador") or {}).get("NombreOrganismo", "")
+        for lic in datos["licitaciones"]
+    }
+    assert len(organismos - {""}) > 10, "se perdieron los nombres de organismo"
+
+
+def test_anonimizar_conserva_el_rut_del_organismo():
+    """Quitar de mas tambien es un fallo: sin el organismo la demo no sirve."""
+    from backend.modulos.m1_radar.demo import anonimizar
+
+    limpio = anonimizar(
+        {
+            "Comprador": {
+                "RutUnidad": "60.301.001-9",
+                "NombreOrganismo": "SERVIU",
+                "NombreUsuario": "Juan Perez",
+            },
+            "Items": {"Listado": [{"Adjudicacion": {"RutProveedor": "16.604.455-3"}}]},
+            "Descripcion": "adjudicado a 26.907.748-4",
+        }
+    )
+
+    assert limpio["Comprador"]["RutUnidad"] == "60.301.001-9"
+    assert limpio["Comprador"]["NombreOrganismo"] == "SERVIU"
+    assert limpio["Comprador"]["NombreUsuario"] == ""
+    assert "16.604.455-3" not in limpio["Items"]["Listado"][0]["Adjudicacion"]["RutProveedor"]
+    assert "26.907.748-4" not in limpio["Descripcion"]

@@ -23,6 +23,7 @@ el repositorio acumularia 66 nombres de funcionarios sin ninguna razon.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -53,24 +54,52 @@ CAMPOS_PERSONALES = (
 )
 
 
-def anonimizar(crudo: dict[str, Any]) -> dict[str, Any]:
-    """Devuelve una copia sin los datos del funcionario a cargo.
+#: Un RUT chileno en cualquier texto. Se enmascara salvo donde identifica a un
+#: organismo del Estado, que es informacion institucional y no personal.
+RE_RUT = re.compile(r"\b\d{1,2}\.\d{3}\.\d{3}-[\dkK]\b")
 
-    No toca el RUT de la unidad compradora: ese identifica al organismo
-    (60.x, 61.x son instituciones del Estado), no a una persona.
+#: Unico campo donde un RUT se conserva: identifica a la unidad compradora.
+CAMPO_RUT_PERMITIDO = "RutUnidad"
+
+
+def _enmascarar_ruts(texto: str) -> str:
+    return RE_RUT.sub("[RUT omitido]", texto)
+
+
+def anonimizar(crudo: dict[str, Any]) -> dict[str, Any]:
+    """Quita de una licitacion todo lo que identifique a una persona.
+
+    Dos cosas, porque la API esparce datos personales en mas de un sitio:
+
+    1. Los campos del funcionario a cargo (nombre, cargo, correo, telefono).
+    2. Cualquier RUT en cualquier texto, EXCEPTO `Comprador.RutUnidad`.
+
+    El punto 2 usa lista blanca y no lista negra a proposito. Al exportar por
+    primera vez aparecieron RUT en tres sitios distintos: la unidad compradora
+    (institucional, se conserva), la descripcion en texto libre, y el proveedor
+    adjudicado — y dos de esos ultimos estaban en rango de persona natural.
+    Ir campo por campo habria dejado fuera el siguiente sitio donde la API
+    decida ponerlos.
+
+    Se pierde el RUT del proveedor adjudicado, que serviria para la
+    inteligencia competitiva de M3. No importa: ese dato se pide en vivo a la
+    API cuando haga falta, no se saca de un archivo de demostracion.
     """
-    copia = dict(crudo)
-    for campo in CAMPOS_PERSONALES:
-        if campo in copia:
-            copia[campo] = ""
-    comprador = copia.get("Comprador")
-    if isinstance(comprador, dict):
-        comprador = dict(comprador)
-        for campo in CAMPOS_PERSONALES:
-            if campo in comprador:
-                comprador[campo] = ""
-        copia["Comprador"] = comprador
-    return copia
+
+    def limpiar(valor: Any, clave: str = "") -> Any:
+        if isinstance(valor, dict):
+            return {k: limpiar(v, k) for k, v in valor.items()}
+        if isinstance(valor, list):
+            return [limpiar(v, clave) for v in valor]
+        if isinstance(valor, str):
+            if clave in CAMPOS_PERSONALES:
+                return ""
+            if clave == CAMPO_RUT_PERMITIDO:
+                return valor
+            return _enmascarar_ruts(valor)
+        return valor
+
+    return limpiar(crudo)
 
 
 def ruta_demo(raiz: Path | None = None) -> Path:
