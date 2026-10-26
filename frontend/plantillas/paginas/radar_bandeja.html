@@ -3,6 +3,14 @@
 {% extends "base/base.html" %}
 {% set procedimiento_codigo = "M1-RADAR" %}
 
+{% block subtitulo %}
+  <p class="suave">
+    Lo que hay que mirar <strong>hoy</strong>: lo que llegó nuevo, lo que cambió
+    y lo que cierra pronto. Cuando no queda nada aquí, el día está al día.
+    El archivo completo está en <a href="/radar/licitaciones">Licitaciones</a>.
+  </p>
+{% endblock %}
+
 {% block acciones %}
   <form method="post" action="/radar/importar" class="horizontal">
     <input type="text" name="codigo" placeholder="Pegar código (ej. 1509-5-L126)" style="width:230px">
@@ -117,9 +125,17 @@
                   <div class="pequeno tenue">{{ l.fecha_cierre|fecha_hora }}</div>
                 </td>
                 <td class="ajustado">
-                  <form method="post" action="/radar/licitaciones/{{ l.codigo }}/interesa">
-                    <button class="boton pequeno principal" type="submit">Interesa</button>
-                  </form>
+                  <div class="horizontal">
+                    <form method="post" action="/radar/licitaciones/{{ l.codigo }}/interesa">
+                      <button class="boton pequeno principal" type="submit">Interesa</button>
+                    </form>
+                    <form method="post" action="/radar/licitaciones/{{ l.codigo }}/eliminar"
+                          onsubmit="return confirm('¿Eliminar {{ l.codigo }}?\n\n{{ l.nombre|truncate(70)|replace("'", "") }}')">
+                      <input type="hidden" name="volver_a" value="/radar/">
+                      <button class="boton pequeno peligro" type="submit"
+                              title="Eliminar esta licitación">&times;</button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             {% endfor %}

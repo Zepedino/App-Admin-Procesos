@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>API de Mercado Público</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Documentación técnica: una columna de lectura, con las tablas y los bloques
+   de código a sangre completa. Paleta de cianotipo, igual que el resto del
+   proyecto: azul de plano sobre neutros fríos, ámbar y rojo solo para avisos. */
+:root {
+  --tinta:       #141a21;
+  --tinta-2:     #475667;
+  --tinta-3:     #7b8a9b;
+  --papel:       #f7f8fa;
+  --papel-2:     #ffffff;
+  --papel-3:     #eef1f5;
+  --linea:       #d8dee6;
+  --plano:       #0b5cab;
+  --plano-suave: #e4eefa;
+  --ambar:       #9a5b00;
+  --ambar-suave: #fdf1dc;
+  --rojo:        #a52222;
+  --rojo-suave:  #fbe9e9;
+  --verde:       #16624a;
+  --verde-suave: #e2f1ec;
+  --display: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --texto:   "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:    "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tinta: #e8edf3; --tinta-2: #a4b2c2; --tinta-3: #7d8c9e;
+    --papel: #0e1217; --papel-2: #161c23; --papel-3: #1d242d;
+    --linea: #2a333e;
+    --plano: #6aa9ec; --plano-suave: #15283c;
+    --ambar: #d9a257; --ambar-suave: #332713;
+    --rojo: #ec8c8c; --rojo-suave: #351b1b;
+    --verde: #6cc3a3; --verde-suave: #16302a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --tinta: #e8edf3; --tinta-2: #a4b2c2; --tinta-3: #7d8c9e;
+  --papel: #0e1217; --papel-2: #161c23; --papel-3: #1d242d;
+  --linea: #2a333e;
+  --plano: #6aa9ec; --plano-suave: #15283c;
+  --ambar: #d9a257; --ambar-suave: #332713;
+  --rojo: #ec8c8c; --rojo-suave: #351b1b;
+  --verde: #6cc3a3; --verde-suave: #16302a;
+  color-scheme: dark;
+}
+
+body { background: var(--papel); color: var(--tinta); font-family: var(--texto);
+  line-height: 1.62; -webkit-font-smoothing: antialiased; }
+.marco { max-width: 1050px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 2.5rem 4rem; }
+
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.9rem, 4.5vw, 2.8rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.1; }
+h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -.012em; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; max-width: 70ch; }
+code { font-family: var(--mono); font-size: .86em; background: var(--papel-3);
+  padding: .1em .35em; border-radius: 2px; }
+
+.ojo { font-family: var(--mono); font-size: .72rem; text-transform: uppercase;
+  letter-spacing: .14em; color: var(--plano); font-weight: 500; }
+
+header.cab { display: flex; flex-direction: column; gap: .7rem;
+  padding-bottom: 1.8rem; border-bottom: 2px solid var(--tinta); }
+header.cab .bajada { color: var(--tinta-2); font-size: 1.02rem; }
+
+section { margin-top: 2.8rem; }
+section > h2 { margin-bottom: .3rem; }
+section > h2 + p { color: var(--tinta-3); font-size: .9rem; margin-bottom: 1.1rem; }
+
+.caja { background: var(--papel-2); border: 1px solid var(--linea);
+  padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: .6rem;
+  min-width: 0; }
+
+.aviso { border-left: 3px solid; padding: .9rem 1.1rem; display: flex;
+  flex-direction: column; gap: .4rem; font-size: .92rem; }
+.aviso.ojo-rojo  { background: var(--rojo-suave);  border-color: var(--rojo); }
+.aviso.ojo-ambar { background: var(--ambar-suave); border-color: var(--ambar); }
+.aviso.ojo-azul  { background: var(--plano-suave); border-color: var(--plano); }
+.aviso strong { font-family: var(--display); }
+.aviso.ojo-rojo strong  { color: var(--rojo); }
+.aviso.ojo-ambar strong { color: var(--ambar); }
+.aviso.ojo-azul strong  { color: var(--plano); }
+
+/* Endpoints */
+.endpoint { background: var(--papel-2); border: 1px solid var(--linea);
+  margin-bottom: 1rem; min-width: 0; }
+.endpoint > .cabecera { display: flex; gap: .7rem; align-items: center;
+  flex-wrap: wrap; padding: .8rem 1.1rem; border-bottom: 1px solid var(--linea);
+  background: var(--papel-3); }
+.metodo { font-family: var(--mono); font-size: .68rem; font-weight: 600;
+  background: var(--verde-suave); color: var(--verde); border: 1px solid var(--verde);
+  padding: .1rem .4rem; border-radius: 2px; letter-spacing: .05em; }
+.ruta { font-family: var(--mono); font-size: .88rem; font-weight: 500;
+  color: var(--plano); word-break: break-all; min-width: 0; }
+.endpoint > .cuerpo { padding: 1rem 1.1rem; display: flex; flex-direction: column;
+  gap: .7rem; }
+.endpoint .para { color: var(--tinta-2); font-size: .92rem; }
+
+pre { background: var(--papel-3); border: 1px solid var(--linea); margin: 0;
+  padding: .8rem 1rem; overflow-x: auto; font-family: var(--mono);
+  font-size: .8rem; line-height: 1.55; }
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.tabla-envoltura { overflow-x: auto; border: 1px solid var(--linea);
+  background: var(--papel-2); }
+table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+thead th { text-align: left; background: var(--papel-3);
+  font-family: var(--mono); font-size: .68rem; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--tinta-2); font-weight: 500;
+  padding: .55rem .75rem; border-bottom: 1px solid var(--linea); white-space: nowrap; }
+tbody td { padding: .55rem .75rem; border-bottom: 1px solid var(--linea);
+  vertical-align: top; }
+tbody tr:last-child td { border-bottom: none; }
+td.mono, th.mono { font-family: var(--mono); font-size: .82rem; white-space: nowrap; }
+
+.si-no { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+.si-no ul { margin: 0; padding: 0; list-style: none; display: flex;
+  flex-direction: column; gap: .5rem; font-size: .9rem; }
+.si-no li { display: flex; gap: .55rem; align-items: flex-start; }
+.marca { font-family: var(--mono); font-weight: 600; flex: 0 0 auto; }
+.puede .marca { color: var(--verde); }
+.no-puede .marca { color: var(--rojo); }
+.si-no .caja.puede { border-top: 3px solid var(--verde); }
+.si-no .caja.no-puede { border-top: 3px solid var(--rojo); }
+.si-no h3 { margin-bottom: .2rem; }
+.si-no .como { color: var(--tinta-3); font-size: .85em; display: block; }
+
+.cifras { display: grid; gap: 1px; background: var(--linea);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  border: 1px solid var(--linea); }
+.cifra { background: var(--papel-2); padding: .9rem 1rem; min-width: 0; }
+.cifra .n { font-family: var(--display); font-size: 1.6rem; font-weight: 800;
+  letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums;
+  color: var(--plano); }
+.cifra .et { font-size: .74rem; color: var(--tinta-2); margin-top: .3rem;
+  text-transform: uppercase; letter-spacing: .05em; }
+
+footer { margin-top: 3.5rem; padding-top: 1.2rem; border-top: 1px solid var(--linea);
+  color: var(--tinta-3); font-size: .82rem; }
+
+@media (max-width: 560px) {
+  .marco { padding-block: 1.75rem 3rem; }
+  .cifra .n { font-size: 1.4rem; }
+}
+</style>
+
+<div class="marco">
+
+  <header class="cab">
+    <span class="ojo">ChileCompra · api.mercadopublico.cl</span>
+    <h1>API de Mercado Público</h1>
+    <p class="bajada">Qué se puede sacar del portal de compras del Estado, qué no,
+      y las trampas que solo se descubren al usarla. Todo lo de aquí está
+      comprobado contra la API real, no copiado de la documentación.</p>
+  </header>
+
+  <section>
+    <h2>Lo primero: los límites</h2>
+    <p>No son recomendaciones. El tope diario no se puede ampliar.</p>
+    <div class="cifras">
+      <div class="cifra"><div class="n">10.000</div><div class="et">llamadas al día</div></div>
+      <div class="cifra"><div class="n">3 s</div><div class="et">entre llamadas</div></div>
+      <div class="cifra"><div class="n">22–07</div><div class="et">ventana para cargas masivas</div></div>
+      <div class="cifra"><div class="n">1</div><div class="et">ticket por persona</div></div>
+    </div>
+
+    <div class="aviso ojo-ambar" style="margin-top:1rem">
+      <strong>Los 3 segundos son medidos, no inventados</strong>
+      <p>Con seis llamadas seguidas: a 0,6 s dos de seis respondieron
+        <code>HTTP 429</code>; a 1,5 s, una de seis; a 3,0 s, ninguna. Sin
+        espaciarlas, el 85 % de las llamadas necesitaba reintento — y cada
+        reintento gasta cuota igual.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Autenticación</h2>
+    <p>Un parámetro <code>ticket</code> en cada llamada. No hay cabeceras ni OAuth.</p>
+
+    <pre><code>https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json
+    ?fecha=04092026
+    &amp;ticket=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</code></pre>
+
+    <div class="aviso ojo-rojo" style="margin-top:1rem">
+      <strong>Un ticket inválido responde HTTP 200, no un error</strong>
+      <p>Devuelve <code>200</code> con el cuerpo
+        <code>{"Codigo": …, "Mensaje": "Ticket no válido"}</code> en vez de la
+        clave <code>Listado</code>. Si el código no distingue ese caso, el
+        sistema parece funcionar y simplemente no trae nada. Hay que comprobarlo
+        a propósito.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Qué se puede pedir</h2>
+    <p>Cuatro recursos. Todo es <code>GET</code> y todo devuelve JSON.</p>
+
+    <div class="endpoint">
+      <div class="cabecera">
+        <span class="metodo">GET</span>
+        <span class="ruta">licitaciones.json?fecha=DDMMAAAA</span>
+      </div>
+      <div class="cuerpo">
+        <p class="para">Todas las licitaciones con movimiento ese día. Un día hábil
+          devuelve del orden de 1.100 a 1.400.</p>
+        <p><strong>Devuelve solo cuatro campos por licitación</strong>, y el
+          organismo comprador <em>no</em> es uno de ellos:</p>
+        <pre><code>{ "CodigoExterno": "1002-57-LP26",
+  "Nombre": "CONVENIO DE MANTENCION…",
+  "CodigoEstado": 7,
+  "FechaCierre": "2026-09-04T09:54:51" }</code></pre>
+        <p class="para">Esta limitación es la que condiciona todo lo demás: para
+          saber de quién es una licitación hay que pedir su detalle, una llamada
+          por licitación.</p>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="cabecera">
+        <span class="metodo">GET</span>
+        <span class="ruta">licitaciones.json?codigo=CODIGO</span>
+      </div>
+      <div class="cuerpo">
+        <p class="para">El detalle completo de una licitación. Es la llamada cara:
+          una por licitación.</p>
+        <p>Trae organismo comprador con región y comuna, el bloque de fechas
+          completo (cierre, preguntas, apertura técnica y económica,
+          adjudicación, visita a terreno), monto y su naturaleza, modalidad de
+          pago, los ítems con su categoría UNSPSC, y las banderas
+          <code>Obras</code>, <code>TomaRazon</code>,
+          <code>SubContratacion</code>, <code>EsRenovable</code>.</p>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="cabecera">
+        <span class="metodo">GET</span>
+        <span class="ruta">licitaciones.json?CodigoOrganismo=X&amp;estado=activas</span>
+      </div>
+      <div class="cuerpo">
+        <p class="para">Todas las licitaciones abiertas de un organismo. Es la
+          única forma de garantizar que no se escape nada de un comprador
+          concreto, se llame como se llame la licitación.</p>
+        <div class="aviso ojo-azul">
+          <strong><code>estado=activas</code> no es opcional</strong>
+          <p>Con <code>CodigoOrganismo</code> a secas, la respuesta es una lista
+            vacía. Siempre. No da error: simplemente no devuelve nada.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="cabecera">
+        <span class="metodo">GET</span>
+        <span class="ruta">Empresas/BuscarComprador</span>
+      </div>
+      <div class="cuerpo">
+        <p class="para">El catálogo de organismos compradores: 899 al
+          comprobarlo. Una llamada trae la lista entera.</p>
+        <pre><code>{ "CodigoEmpresa": "6965",
+  "NombreEmpresa": "SERVICIO DE VIVIENDA Y URBANIZACION AREA METROPOLITANA" }</code></pre>
+        <div class="aviso ojo-ambar">
+          <strong>Responde <code>listaEmpresas</code>, no <code>Listado</code></strong>
+          <p>Los dos recursos de <code>Empresas/</code> usan otra clave que el
+            resto. Un cliente que dé por hecho <code>Listado</code> falla aquí.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="cabecera">
+        <span class="metodo">GET</span>
+        <span class="ruta">Empresas/BuscarProveedor?rutempresaproveedor=RUT</span>
+      </div>
+      <div class="cuerpo">
+        <p class="para">Busca un proveedor por RUT. <strong>Con puntos y guion</strong>
+          (<code>76.326.402-5</code>). Devuelve poco: código y nombre.</p>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="cabecera">
+        <span class="metodo">GET</span>
+        <span class="ruta">ordenesdecompra.json</span>
+      </div>
+      <div class="cuerpo">
+        <p class="para">Órdenes de compra, con las mismas variantes que
+          licitaciones: por <code>codigo</code>, por <code>fecha</code>, por
+          <code>CodigoProveedor</code>.</p>
+        <p class="para">Sirve para detectar órdenes nuevas emitidas a la empresa
+          sin tener que digitarlas a mano.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>El parámetro <code>estado</code></h2>
+    <p>Acepta muchos menos valores de los que uno esperaría. Comprobado uno a uno.</p>
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th class="mono">Valor</th><th>Resultado</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">activas</td><td>Funciona. 5.233 licitaciones abiertas en todo el portal.</td></tr>
+          <tr><td class="mono">todos</td><td>Funciona, pero devuelve un subconjunto pequeño (170).</td></tr>
+          <tr><td class="mono">adjudicadas</td><td><em>«Los parámetros no son válidos»</em></td></tr>
+          <tr><td class="mono">cerradas</td><td><em>«Los parámetros no son válidos»</em></td></tr>
+          <tr><td class="mono">desiertas</td><td><em>«Los parámetros no son válidos»</em></td></tr>
+          <tr><td class="mono">publicadas</td><td><em>«Los parámetros no son válidos»</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:.8rem; color:var(--tinta-3); font-size:.88rem">
+      Para filtrar por estado hay que usar <code>CodigoEstado</code> del detalle:
+      5 Publicada · 6 Cerrada · 7 Desierta · 8 Adjudicada · 18 Revocada · 19 Suspendida.
+    </p>
+  </section>
+
+  <section>
+    <h2>Qué se puede y qué no</h2>
+    <p>Lo segundo importa más: marca dónde termina la API y empieza el trabajo manual.</p>
+    <div class="si-no">
+      <div class="caja puede">
+        <h3>Sí se puede</h3>
+        <ul>
+          <li><span class="marca">✓</span><span>Listar licitaciones de un día</span></li>
+          <li><span class="marca">✓</span><span>Detalle completo por código</span></li>
+          <li><span class="marca">✓</span><span>Todo lo abierto de un organismo</span></li>
+          <li><span class="marca">✓</span><span>Fechas del proceso: cierre, preguntas, aperturas, adjudicación</span></li>
+          <li><span class="marca">✓</span><span>Monto estimado y si es presupuesto o referencia</span></li>
+          <li><span class="marca">✓</span><span>Categorías UNSPSC de cada ítem</span></li>
+          <li><span class="marca">✓</span><span>Catálogo de los 899 organismos compradores</span></li>
+          <li><span class="marca">✓</span><span>Órdenes de compra por proveedor</span></li>
+          <li><span class="marca">✓</span><span>Quién se adjudicó y por cuánto <span class="como">(histórico, para calibrar precio)</span></span></li>
+        </ul>
+      </div>
+      <div class="caja no-puede">
+        <h3>No se puede</h3>
+        <ul>
+          <li><span class="marca">✕</span><span>Descargar las bases ni los anexos
+            <span class="como">→ hay que leer la ficha pública del portal</span></span></li>
+          <li><span class="marca">✕</span><span>Ver las notificaciones de la cuenta del proveedor
+            <span class="como">→ leer el correo que manda el portal</span></span></li>
+          <li><span class="marca">✕</span><span>Saber las multas aplicadas
+            <span class="como">→ registro manual</span></span></li>
+          <li><span class="marca">✕</span><span>Saber si un pago se recibió
+            <span class="como">→ conciliación manual</span></span></li>
+          <li><span class="marca">✕</span><span>Ver el foro de preguntas y respuestas
+            <span class="como">→ está en la ficha, no en la API</span></span></li>
+          <li><span class="marca">✕</span><span>Recibir avisos <span class="como">→ no hay webhooks: hay que consultar</span></span></li>
+          <li><span class="marca">✕</span><span>Escribir nada <span class="como">→ la API es solo de lectura. No se oferta por aquí</span></span></li>
+          <li><span class="marca">✕</span><span>Filtrar por organismo en el listado diario
+            <span class="como">→ ese campo no viene</span></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Trampas comprobadas</h2>
+    <p>Cosas que cuestan medio día de depuración si no se saben.</p>
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th>Qué pasa</th><th>Por qué</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Ticket inválido y todo «funciona»</td>
+            <td>Responde <code>200</code> con <code>Mensaje</code>, no un error HTTP.</td>
+          </tr>
+          <tr>
+            <td><code>CodigoOrganismo</code> devuelve vacío</td>
+            <td>Falta <code>&amp;estado=activas</code>. No avisa.</td>
+          </tr>
+          <tr>
+            <td><code>Empresas/</code> «no trae nada»</td>
+            <td>La clave es <code>listaEmpresas</code>, no <code>Listado</code>.</td>
+          </tr>
+          <tr>
+            <td>Muchos <code>HTTP 429</code></td>
+            <td>Llamadas demasiado seguidas. Espaciarlas 3 s.</td>
+          </tr>
+          <tr>
+            <td>Fechas con un día o varias horas de diferencia</td>
+            <td>Vienen en ISO <strong>sin zona horaria</strong>. Son hora de Chile.</td>
+          </tr>
+          <tr>
+            <td>Un «1» que no es verdadero</td>
+            <td>Las banderas llegan como texto <code>"0"</code>/<code>"1"</code>, no booleanos.</td>
+          </tr>
+          <tr>
+            <td>Monto vacío en una licitación grande</td>
+            <td><code>VisibilidadMonto=0</code>: el organismo eligió no publicarlo.</td>
+          </tr>
+          <tr>
+            <td>Buscar «SERVIU» encuentra uno solo</td>
+            <td>En el catálogo figuran como «SERVICIO DE VIVIENDA Y URBANIZACION». Son 13.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cómo pedir el ticket</h2>
+    <div class="caja">
+      <p>Es gratis. Entra a <strong>chilecompra.cl/api</strong>, acepta los
+        términos, inicia sesión con <strong>Clave Única</strong> y completa el
+        formulario. El código llega al correo que registres.</p>
+      <p><strong>Es uno por persona</strong>, asociado a un RUT, no a la empresa.
+        Conviene emitirlo a nombre de alguien estable en el cargo: si esa persona
+        deja la organización, el ticket puede dejar de servir.</p>
+      <p style="color:var(--tinta-3); font-size:.88rem">Si no llega: revisa spam,
+        y ten en cuenta que si la dirección estaba mal escrita el correo rebotó y
+        no se recupera creando después esa casilla. Hay que pedir el reenvío a la
+        Mesa de Ayuda: <strong>600 0061 211</strong> o <strong>+56 2 2595 0820</strong>,
+        lunes a jueves 9–18 h y viernes 9–17 h.</p>
+    </div>
+  </section>
+
+  <footer>
+    Comprobado contra api.mercadopublico.cl en octubre de 2026. ChileCompra está
+    desarrollando un portal de APIs unificado que reemplazará progresivamente al
+    actual, así que conviene revisar estas respuestas de vez en cuando.
+  </footer>
+
+</div>
+
+</body>
+</html>

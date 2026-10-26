@@ -76,6 +76,7 @@ def listado(
             "estados": list(EstadoSeguimiento),
             "estado_actual": estado,
             "q": q,
+            "vencidas": services.contar_vencidas(s),
             "titulo": "Licitaciones",
         },
     )
@@ -138,6 +139,28 @@ def accion_descartar(
             status_code=400,
         )
     return RedirectResponse(f"/radar/licitaciones/{codigo}", status_code=303)
+
+
+@router.post("/licitaciones/{codigo}/eliminar")
+def accion_eliminar(
+    codigo: str,
+    volver_a: str = Form("/radar/licitaciones"),
+    s: Session = Depends(dependencia_sesion),
+) -> RedirectResponse:
+    """Borra una licitacion. La confirmacion la pide el navegador antes de enviar."""
+    services.eliminar(s, codigo)
+    return RedirectResponse(volver_a, status_code=303)
+
+
+@router.post("/licitaciones/eliminar-vencidas")
+def accion_eliminar_vencidas(
+    volver_a: str = Form("/radar/licitaciones"),
+    s: Session = Depends(dependencia_sesion),
+) -> RedirectResponse:
+    """Limpieza masiva de las que ya cerraron."""
+    cuantas = services.eliminar_vencidas(s)
+    separador = "&" if "?" in volver_a else "?"
+    return RedirectResponse(f"{volver_a}{separador}eliminadas={cuantas}", status_code=303)
 
 
 @router.post("/importar")

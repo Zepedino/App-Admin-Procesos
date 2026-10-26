@@ -6,6 +6,9 @@ Este documento existe para que alguien —o una conversación nueva con un
 asistente— pueda continuar el trabajo sin haber estado presente. Contiene el
 porqué de las decisiones, no solo el qué.
 
+Para saber qué permite la API y qué no, está
+[`api-mercado-publico.html`](api-mercado-publico.html) (se abre en el navegador).
+
 **Orden de lectura sugerido:** este documento → [`PRD-v1-sistema-licitaciones.md`](PRD-v1-sistema-licitaciones.md)
 (la especificación funcional) → [`ESTADO.md`](ESTADO.md) (qué está construido) →
 [`arquitectura.md`](arquitectura.md) (cómo). Las restricciones no negociables

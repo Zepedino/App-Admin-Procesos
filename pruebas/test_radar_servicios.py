@@ -502,3 +502,114 @@ def test_url_cambia_con_el_codigo():
     assert a != b
     assert a.endswith("638-21-LR26")
     assert b.endswith("704093-137-LP26")
+
+
+def test_el_aviso_de_dias_sin_sincronizar_se_puede_apagar(bd):
+    """Regresion: el aviso reclamaba dias imposibles y nunca desaparecia.
+
+    Miraba 14 dias hacia atras sin mas, asi que incluia sabados, domingos y
+    dias anteriores a la instalacion del sistema. Por mucho que se
+    sincronizara, el aviso seguia ahi: ruido permanente, que es como se
+    consigue que nadie mire las alertas.
+    """
+    from datetime import timedelta
+
+    from backend.modulos.m1_radar.models import SincronizacionDia
+    from backend.modulos.m1_radar.services import dias_sin_sincronizar
+    from backend.nucleo.modelo_base import ahora_utc
+    from backend.nucleo.tiempo import ahora_local
+
+    hoy = ahora_local().date()
+
+    # Sin ninguna sincronizacion no hay huecos: el sistema acaba de instalarse.
+    with sesion() as s:
+        assert dias_sin_sincronizar(s) == []
+
+    # Con una sola sincronizacion de hoy, tampoco: no hay dias previos que
+    # reclamar porque el sistema no existia antes.
+    with sesion() as s:
+        s.add(SincronizacionDia(dia=hoy, ejecutado_en=ahora_utc(), ok=True))
+    with sesion() as s:
+        assert dias_sin_sincronizar(s) == []
+
+    # Un hueco real entre dos sincronizaciones SI se reporta, y solo si es habil.
+    with sesion() as s:
+        s.add(SincronizacionDia(dia=hoy - timedelta(days=9), ejecutado_en=ahora_utc(), ok=True))
+    with sesion() as s:
+        faltan = dias_sin_sincronizar(s, ventana=10)
+        assert faltan, "un hueco real entre dos sincronizaciones debe verse"
+        assert all(d.weekday() < 5 for d in faltan), f"se colo un fin de semana: {faltan}"
+        assert all(d >= hoy - timedelta(days=9) for d in faltan)
+
+
+def _licitacion_cruda(codigo: str, cierre: str) -> dict:
+    return {
+        "CodigoExterno": codigo,
+        "Nombre": f"Inspeccion tecnica {codigo}",
+        "CodigoEstado": 5,
+        "Tipo": "LE",
+        "Comprador": {"CodigoOrganismo": "555", "NombreOrganismo": "SERVIU PRUEBA"},
+        "Fechas": {"FechaCierre": cierre},
+        "Items": {"Cantidad": 0, "Listado": []},
+    }
+
+
+def test_eliminar_borra_y_deja_rastro_en_auditoria(bd):
+    """Borrar sin rastro haria invisible una decision que alguien tomo."""
+    from backend.conectores.mercado_publico.base import LicitacionDetalle
+    from backend.modulos.m1_radar.models import Licitacion
+    from backend.modulos.m1_radar.services import eliminar, guardar_detalle
+    from backend.nucleo.auditoria import RegistroAuditoria
+
+    with sesion() as s:
+        guardar_detalle(s, LicitacionDetalle.desde_api(
+            _licitacion_cruda("7777-1-LE26", "2027-01-15T15:00:00")))
+
+    with sesion() as s:
+        nombre = eliminar(s, "7777-1-LE26")
+    assert "7777-1-LE26" in nombre
+
+    with sesion() as s:
+        assert s.execute(
+            select(Licitacion).where(Licitacion.codigo == "7777-1-LE26")
+        ).scalar_one_or_none() is None
+
+        registro = s.execute(
+            select(RegistroAuditoria).where(
+                RegistroAuditoria.accion == "eliminar",
+                RegistroAuditoria.entidad_id == "7777-1-LE26",
+            )
+        ).scalar_one()
+        assert "7777-1-LE26" in (registro.valor_anterior or "")
+
+
+def test_eliminar_vencidas_respeta_las_abiertas(bd):
+    """Lo que sigue abierto no se toca, y una sin fecha no esta vencida:
+    esta sin informacion, que no es lo mismo."""
+    from backend.conectores.mercado_publico.base import LicitacionDetalle
+    from backend.modulos.m1_radar.models import Licitacion
+    from backend.modulos.m1_radar.services import (
+        contar_vencidas,
+        eliminar_vencidas,
+        guardar_detalle,
+    )
+
+    casos = [
+        ("1001-1-LE26", "2020-01-15T15:00:00"),   # vencida
+        ("1002-1-LE26", "2021-06-10T15:00:00"),   # vencida
+        ("1003-1-LE26", "2030-12-01T15:00:00"),   # abierta
+        ("1004-1-LE26", None),                    # sin fecha
+    ]
+    with sesion() as s:
+        for codigo, cierre in casos:
+            guardar_detalle(s, LicitacionDetalle.desde_api(_licitacion_cruda(codigo, cierre)))
+
+    with sesion() as s:
+        assert contar_vencidas(s) == 2
+
+    with sesion() as s:
+        assert eliminar_vencidas(s) == 2
+
+    with sesion() as s:
+        quedan = set(s.execute(select(Licitacion.codigo)).scalars().all())
+    assert quedan == {"1003-1-LE26", "1004-1-LE26"}, f"quedaron: {quedan}"

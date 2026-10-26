@@ -1,5 +1,30 @@
 {% extends "base/base.html" %}
+
+{% block subtitulo %}
+  <p class="suave">
+    El archivo completo: <strong>todo</strong> lo que el radar ha traído alguna vez,
+    incluido lo descartado y lo ya cerrado. Para el trabajo del día está la
+    <a href="/radar/">bandeja</a>; esto es para buscar algo concreto o limpiar.
+  </p>
+{% endblock %}
+
+{% block acciones %}
+  {% if vencidas %}
+    <form method="post" action="/radar/licitaciones/eliminar-vencidas"
+          onsubmit="return confirm('Se eliminarán {{ vencidas }} licitaciones que ya cerraron. Las que siguen abiertas no se tocan. ¿Continuar?')">
+      <input type="hidden" name="volver_a" value="/radar/licitaciones">
+      <button class="boton peligro" type="submit">Eliminar {{ vencidas }} vencidas</button>
+    </form>
+  {% endif %}
+{% endblock %}
+
 {% block contenido %}
+  {% if request.query_params.get('eliminadas') %}
+    <div class="aviso info">
+      <span class="icono">i</span>
+      <div>Se eliminaron {{ request.query_params.get('eliminadas') }} licitaciones vencidas.</div>
+    </div>
+  {% endif %}
   <div class="tarjeta">
     <form method="get" class="fila">
       <div>
@@ -27,7 +52,7 @@
         <table>
           <thead><tr>
             <th>Código</th><th>Nombre</th><th>Organismo</th><th>Tipo</th>
-            <th class="num">Monto</th><th>Estado</th><th>Cierra</th>
+            <th class="num">Monto</th><th>Estado</th><th>Cierra</th><th></th>
           </tr></thead>
           <tbody>
             {% for l in licitaciones %}
@@ -45,6 +70,16 @@
                 <td class="ajustado pequeno">
                   {{ l.fecha_cierre|fecha_corta }}
                   <span class="etiqueta {{ l.fecha_cierre|urgencia_cierre }}">{{ l.fecha_cierre|cuenta_regresiva }}</span>
+                </td>
+                <td class="ajustado">
+                  {# La confirmación la pide el navegador: borrar no se deshace,
+                     y el nombre en el mensaje evita borrar la fila equivocada. #}
+                  <form method="post" action="/radar/licitaciones/{{ l.codigo }}/eliminar"
+                        onsubmit="return confirm('¿Eliminar {{ l.codigo }}?\n\n{{ l.nombre|truncate(70)|replace("'", "") }}')">
+                    <input type="hidden" name="volver_a" value="/radar/licitaciones">
+                    <button class="boton pequeno peligro" type="submit"
+                            title="Eliminar esta licitación">&times;</button>
+                  </form>
                 </td>
               </tr>
             {% endfor %}

@@ -87,6 +87,7 @@ publica en `/procesos/`.
 | [`documentos/ESTADO.md`](documentos/ESTADO.md) | Qué está construido **de verdad** |
 | [`documentos/arquitectura.md`](documentos/arquitectura.md) | Cómo está armado y por qué |
 | [`documentos/decisiones/`](documentos/decisiones/) | Decisiones tomadas, con su motivo |
+| [`documentos/api-mercado-publico.html`](documentos/api-mercado-publico.html) | **Qué se puede y qué no** con la API (abrir en el navegador) |
 | [`documentos/ticket-mercado-publico.md`](documentos/ticket-mercado-publico.md) | **Cómo pedir el ticket de la API** y ponerlo a operar en vivo |
 | [`documentos/despliegue.md`](documentos/despliegue.md) | Publicarlo en internet |
 | [`CLAUDE.md`](CLAUDE.md) | Restricciones no negociables |

@@ -592,6 +592,87 @@ def _obtener(s: Session, codigo: str) -> Licitacion:
     return licitacion
 
 
+# --- Borrado -----------------------------------------------------------------
+
+
+def eliminar(s: Session, codigo: str) -> str:
+    """Borra una licitacion. Devuelve su nombre, para poder decir que se borro.
+
+    El borrado es real, no un marcado: lo que el usuario pide cuando quiere
+    limpiar la bandeja es que desaparezca. Pero queda constancia en la
+    auditoria con el codigo y el nombre, porque borrar sin rastro convierte en
+    invisible una decision que alguien tomo.
+
+    Si manana se quiere recuperar una borrada, se vuelve a traer con
+    `consola traer <codigo>`: la fuente de verdad es Mercado Publico, no
+    nuestra copia.
+    """
+    licitacion = _obtener(s, codigo)
+    nombre = licitacion.nombre
+    registrar(
+        s,
+        accion="eliminar",
+        entidad="Licitacion",
+        entidad_id=codigo,
+        valor_anterior=f"{nombre} ({licitacion.estado_seguimiento})",
+        motivo="eliminada manualmente desde la interfaz",
+        modulo="m1_radar",
+    )
+    s.delete(licitacion)
+    log.info("licitacion eliminada", extra={"codigo": codigo, "nombre": nombre[:60]})
+    return nombre
+
+
+def contar_vencidas(s: Session) -> int:
+    """Cuantas licitaciones ya cerraron. Para poder decirlo ANTES de borrar."""
+    return int(
+        s.execute(
+            select(func.count(Licitacion.id)).where(
+                Licitacion.fecha_cierre.is_not(None),
+                Licitacion.fecha_cierre < ahora_utc(),
+            )
+        ).scalar()
+        or 0
+    )
+
+
+def eliminar_vencidas(s: Session) -> int:
+    """Borra las que ya cerraron. Devuelve cuantas.
+
+    No toca las que siguen abiertas ni las que no tienen fecha de cierre: una
+    licitacion sin fecha no esta vencida, esta sin informacion, y borrarla
+    seria perder algo que todavia puede servir.
+
+    Las adjudicadas tampoco se salvan aqui: cuando exista M5, una adjudicada
+    sera un contrato y vivira en otra tabla. Mientras tanto, si una interesa,
+    se marca antes de limpiar.
+    """
+    vencidas = (
+        s.execute(
+            select(Licitacion).where(
+                Licitacion.fecha_cierre.is_not(None),
+                Licitacion.fecha_cierre < ahora_utc(),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for licitacion in vencidas:
+        registrar(
+            s,
+            accion="eliminar",
+            entidad="Licitacion",
+            entidad_id=licitacion.codigo,
+            valor_anterior=f"{licitacion.nombre} ({licitacion.estado_seguimiento})",
+            motivo="limpieza masiva de vencidas",
+            modulo="m1_radar",
+        )
+        s.delete(licitacion)
+
+    log.info("limpieza de vencidas", extra={"eliminadas": len(vencidas)})
+    return len(vencidas)
+
+
 # --- Consultas para la UI ----------------------------------------------------
 
 
@@ -686,13 +767,41 @@ def resumen_radar(s: Session) -> dict:
     }
 
 
-def dias_sin_sincronizar(s: Session, *, ventana: int = 14) -> list[date]:
-    """Detecta huecos: si un dia no se sincronizo, no lo sabemos por omision."""
-    hoy = ahora_local().date()
-    esperados = {hoy - timedelta(days=i) for i in range(1, ventana + 1)}
+def dias_sin_sincronizar(s: Session, *, ventana: int = 7) -> list[date]:
+    """Dias habiles recientes que quedaron sin sincronizar.
+
+    Un hueco real hay que verlo: si un dia no se sincronizo, nadie se entera
+    por omision. Pero el aviso solo sirve si se puede llegar a cero; si no, es
+    ruido permanente y la gente deja de mirarlo, que es justo lo que el PRD
+    quiere evitar (RF-10.4, "alertas que nadie cierra son ruido").
+
+    Dos acotaciones, las dos aprendidas de verlo fallar:
+
+    1. Solo DIAS HABILES. El portal publica de lunes a viernes; reclamar
+       sabados y domingos garantiza que el aviso nunca se apague.
+    2. Solo DESDE LA PRIMERA SINCRONIZACION. No tiene sentido reclamar dias
+       anteriores a que el sistema existiera: nadie va a reponer el historico
+       de antes de la instalacion, y si quisiera hacerlo es una carga puntual,
+       no un pendiente diario.
+    """
     hechos = set(
         s.execute(
             select(SincronizacionDia.dia).where(SincronizacionDia.ok.is_(True))
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )
-    return sorted(esperados - hechos)
+    if not hechos:
+        # Sin ninguna sincronizacion todavia no hay huecos: hay un sistema
+        # recien instalado, y eso lo dice otra parte de la pantalla.
+        return []
+
+    hoy = ahora_local().date()
+    desde = min(hechos)
+    candidatos = {
+        hoy - timedelta(days=i)
+        for i in range(1, ventana + 1)
+        if (hoy - timedelta(days=i)) >= desde          # no antes de la instalacion
+        and (hoy - timedelta(days=i)).weekday() < 5    # lunes a viernes
+    }
+    return sorted(candidatos - hechos)

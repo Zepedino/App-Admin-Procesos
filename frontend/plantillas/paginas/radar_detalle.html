@@ -11,6 +11,13 @@
     Ver ficha en el portal
   </a>
   {% if licitacion.estado_seguimiento != 'interesa' %}
+    <form method="post" action="/radar/licitaciones/{{ licitacion.codigo }}/eliminar"
+          onsubmit="return confirm('¿Eliminar {{ licitacion.codigo }}?
+
+Se borra del sistema. Si hace falta, se puede volver a traer con su código.')">
+      <input type="hidden" name="volver_a" value="/radar/licitaciones">
+      <button class="boton peligro" type="submit">Eliminar</button>
+    </form>
     <form method="post" action="/radar/licitaciones/{{ licitacion.codigo }}/interesa">
       <button class="boton principal" type="submit">Marcar interesa</button>
     </form>
