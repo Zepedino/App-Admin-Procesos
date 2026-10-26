@@ -283,6 +283,9 @@ def test_sin_ticket_no_hay_falso_positivo(monkeypatch):
 def test_los_datos_de_demo_no_llevan_personas():
     """El archivo versionado no puede acumular datos de personas.
 
+    Los RUT que aparecen abajo son inventados a proposito: poner uno real en
+    un test seria cometer dentro del repositorio justo lo que este test evita.
+
     La API los esparce en mas de un sitio: nombre y cargo del funcionario a
     cargo, y el RUT del proveedor adjudicado, que a veces es una persona
     natural. Al exportar por primera vez salieron 66 nombres y dos RUT en rango
@@ -332,13 +335,13 @@ def test_anonimizar_conserva_el_rut_del_organismo():
                 "NombreOrganismo": "SERVIU",
                 "NombreUsuario": "Juan Perez",
             },
-            "Items": {"Listado": [{"Adjudicacion": {"RutProveedor": "16.604.455-3"}}]},
-            "Descripcion": "adjudicado a 26.907.748-4",
+            "Items": {"Listado": [{"Adjudicacion": {"RutProveedor": "11.111.111-1"}}]},
+            "Descripcion": "adjudicado a 22.222.222-2",
         }
     )
 
     assert limpio["Comprador"]["RutUnidad"] == "60.301.001-9"
     assert limpio["Comprador"]["NombreOrganismo"] == "SERVIU"
     assert limpio["Comprador"]["NombreUsuario"] == ""
-    assert "16.604.455-3" not in limpio["Items"]["Listado"][0]["Adjudicacion"]["RutProveedor"]
-    assert "26.907.748-4" not in limpio["Descripcion"]
+    assert "11.111.111-1" not in limpio["Items"]["Listado"][0]["Adjudicacion"]["RutProveedor"]
+    assert "22.222.222-2" not in limpio["Descripcion"]
